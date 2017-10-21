@@ -1,0 +1,35 @@
+{
+    "name" : "cfxmarkets/php-datalayer",
+    "description" : "A library providing abstract implementations of various persistence layers and data Resource objects.",
+    "type" : "library",
+    "keywords" : [ "persistence", "datasource", "datacontext", "context", "database" ],
+    "license" : "MIT",
+    "authors" : [
+        {
+            "name": "CFX and contributors",
+            "homepage": "https://github.com/cfxmarkets/php-persistence/graphs/contributors"
+        }
+    ],
+    "require" : {
+        "php" : ">=5.4",
+        "kael-shipman/php-std-traits": "~3.2.1"
+    },
+    "require-dev" : {
+        "phpunit/phpunit" : ">=4.8.0"
+    },
+    "autoload" : {
+        "psr-4" : {
+            "CFX\\" : "src/"
+        },
+        "files" : [
+            "src/Persistence/Exceptions.php",
+            "src/JsonApi/Exceptions.php"
+        ]
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/cfxmarkets/php-std-traits.git"
+        }
+    ]
+}
