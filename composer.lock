@@ -4,8 +4,54 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "f1e4b2e570e53f1970a568fd04964bc3",
+    "content-hash": "91db7465b59d97a8f9567cde23790262",
     "packages": [
+        {
+            "name": "cfxmarkets/php-jsonapi-objects",
+            "version": "dev-dev-v2",
+            "dist": {
+                "type": "path",
+                "url": "../../php-jsonapi-objects",
+                "reference": "7f4fd36e62bdf2ef86a8b1837df736ddb5a6b744",
+                "shasum": null
+            },
+            "require": {
+                "kael-shipman/php-std-traits": "~3.2",
+                "php": ">=5.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.8.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-dev-v2": "1.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "CFX\\JsonApi\\": "src/"
+                },
+                "files": [
+                    "src/Exceptions.php"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "CFX Markets and Contributors",
+                    "homepage": "https://github.com/cfxmarkets/php-jsonapi-objects/graphs/contributors"
+                }
+            ],
+            "description": "A class that provides a PHP implementation of JSON API objects. Note, this is not a protocol implementation, it is simply an implementation of classes as described by the [json-api spec](http://jsonapi.org/format/).",
+            "keywords": [
+                "api",
+                "json",
+                "jsonapi"
+            ]
+        },
         {
             "name": "kael-shipman/php-std-traits",
             "version": "v3.2.1",
@@ -1019,7 +1065,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "cfxmarkets/php-jsonapi-objects": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
