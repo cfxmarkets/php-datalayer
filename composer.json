@@ -35,5 +35,10 @@
             "type": "git",
             "url": "https://github.com/cfxmarkets/php-std-traits.git"
         }
-    ]
+    ],
+    "extra": {
+        "branch-alias": {
+            "dev-dev-v2": "0.1.x-dev"
+        }
+    }
 }
