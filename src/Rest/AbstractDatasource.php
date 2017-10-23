@@ -4,16 +4,16 @@ namespace CFX\Persistence\Rest;
 abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements DatasourceInterface {
     public function get($q=null) {
         $endpoint = "/".static::$resourceType;
-        $q = $this->parseQuery($q);
-        if (!$q->requestingCollection()) $endpoint .= "/".substr($q, 3);
+        $q = $this->parseDSL($q);
+        if (!$q->requestingCollection()) $endpoint .= "/".$q->getId();
 
         $r = $this->sendRequest('GET', $endpoint);
         $obj = json_decode($r->getBody(), true);
+        $obj = $obj['data'];
 
         // Convert to "table of rows" format for inflate
         if (!$q->requestingCollection()) $obj = [$obj];
-        $obj = $this->inflateData($obj, $isCollection);
-        if (!$q->requestingCollection()) $obj = $obj[0];
+        $obj = $this->inflateData($obj, $q->requestingCollection());
 
         return $obj;
     }

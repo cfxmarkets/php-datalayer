@@ -63,11 +63,16 @@ class GenericDSLQuery implements DSLQueryInterface {
         if (substr($q, 0, 3) == 'id=') {
             $query->where = "`$query->primaryKey` = ?";
             $query->params = [substr($q, 3)];
+            $query->id = $query->params[0];
             $query->requestingCollection = false;
         } else {
             throw new UnimplementedFeatureException("Sorry, we don't yet support queries beyond `id=....`");
         }
         return $query;
+    }
+
+    public function getId() {
+        return $this->id;
     }
 
     public function getWhere() {
