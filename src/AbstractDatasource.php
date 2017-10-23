@@ -2,12 +2,12 @@
 namespace CFX\Persistence;
 
 abstract class AbstractDatasource implements DatasourceInterface {
-    protected static $resourceType;
+    protected $resourceType;
     protected $context;
     protected $currentData;
 
     public function __construct(DataContextInterface $context) {
-        if (static::$resourceType == null) throw new \RuntimeException("Programmer: You need to define this subclient's `\$resourceType` attribute. This should match the type of resources that this client deals in.");
+        if ($this->getResourceType() === null) throw new \RuntimeException("Programmer: You need to define this subclient's `\$resourceType` attribute. This should match the type of resources that this client deals in.");
         $this->context = $context;
     }
 
@@ -17,6 +17,10 @@ abstract class AbstractDatasource implements DatasourceInterface {
 
     public function newCollection(array $data=null) {
         return new \CFX\JsonApi\ResourceCollection($data);
+    }
+
+    public function getResourceType() {
+        return $this->resourceType;
     }
 
     /**

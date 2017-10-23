@@ -2,7 +2,7 @@
 namespace CFX\Persistence\Test;
 
 class PeopleDatasource extends \CFX\Persistence\AbstractDatasource implements \CFX\JsonApi\DatasourceInterface {
-    protected static $resourceType = 'test-people';
+    protected $resourceType = 'test-people';
     protected $saveType;
 
     public function create(array $data=null) {

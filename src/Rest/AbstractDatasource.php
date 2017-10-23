@@ -3,7 +3,7 @@ namespace CFX\Persistence\Rest;
 
 abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements DatasourceInterface {
     public function get($q=null) {
-        $endpoint = "/".static::$resourceType;
+        $endpoint = "/".$this->getResourceType();
         $q = $this->parseDSL($q);
         if (!$q->requestingCollection()) $endpoint .= "/".$q->getId();
 
@@ -19,11 +19,11 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     }
 
     protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
-        return $this->_saveRest('POST', "/".static::$resourceType, $r);
+        return $this->_saveRest('POST', "/".$this->getResourceType(), $r);
     }
 
     protected function saveExisting(\CFX\JsonApi\ResourceInterface $r) {
-        return $this->_saveRest('PATCH', "/".static::$resourceType."/{$r->getId()}", $r);
+        return $this->_saveRest('PATCH', "/".$this->getResourceType()."/{$r->getId()}", $r);
     }
 
     /**
@@ -43,7 +43,7 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
 
     public function delete($r) {
         if ($r instanceof \CFX\JsonApi\ResourceInterface) $r = $r->getId();
-        $this->sendRequest('DELETE', "/".static::$resourceType."/$r");
+        $this->sendRequest('DELETE', "/".$this->getResourceType()."/$r");
         return $this;
     }
 
