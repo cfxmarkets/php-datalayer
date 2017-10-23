@@ -51,7 +51,8 @@ abstract class AbstractDatasource implements DatasourceInterface {
     /**
      * inflateData -- use the provided data to create a Resource or ResourceCollection object
      *
-     * @param array $data
+     * @param array $data Should always be in the format of a "table with rows", i.e., `[ ["id" => "1234",
+     * "type" => "examples", "attributes" => [] ] ]`
      * @param bool $isCollection Whether or not this data represents a collection
      * @return \CFX\JsonApi\ResourceInterface|\CFX\JsonApi\ResourceCollectionInterface
      */

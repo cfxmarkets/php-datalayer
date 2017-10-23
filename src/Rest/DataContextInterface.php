@@ -1,5 +1,5 @@
 <?php
-namespace CFX\Rest;
+namespace CFX\Persistence\Rest;
 
 interface DataContextInterface {
     public function getApiName();

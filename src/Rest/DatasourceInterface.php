@@ -1,7 +1,7 @@
 <?php
-namespace CFX\Rest;
+namespace CFX\Persistence\Rest;
 
-interface DatasourceInterface extends \CFX\DatasourceInterface {
+interface DatasourceInterface extends \CFX\Persistence\DatasourceInterface {
     /**
      * sendRequest -- send a request for data, returning either raw data, an object, or a collection
      *

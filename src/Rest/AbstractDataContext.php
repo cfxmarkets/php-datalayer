@@ -1,7 +1,7 @@
 <?php
-namespace CFX\Rest;
+namespace CFX\Persistence\Rest;
 
-abstract class AbstractDataContext extends \CFX\AbstractDataContext implements DataContextInterface {
+abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext implements DataContextInterface {
     // Abstract properties to be overridden by children
     protected static $apiName;
     protected static $apiVersion;

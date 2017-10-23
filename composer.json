@@ -20,7 +20,7 @@
     },
     "autoload" : {
         "psr-4" : {
-            "CFX\\" : "src/"
+            "CFX\\Persistence\\" : "src/"
         },
         "files" : [
             "src/Exceptions.php"

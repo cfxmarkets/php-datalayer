@@ -1,27 +1,50 @@
 <?php
-namespace CFX\Rest;
+namespace CFX\Persistence\Rest;
 
-abstract class AbstractDatasource extends \CFX\AbstractDatasource implements DatasourceInterface, \KS\JsonApi\FactoryInterface {
+abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements DatasourceInterface {
     public function get($q=null) {
         $endpoint = "/".static::$resourceType;
-        if ($q) {
-            if (substr($q, 0, 3) != 'id=' || strpos($q, ' ') !== false) throw new \RuntimeException("Programmer: for now, only id queries are accepted. Please pass `id=[asset-symbol]` if you'd like to query a specific asset. Otherwise, just get all assets and filter them yourself.");
-            $isCollection = false;
-
-            $endpoint .= "/".substr($q, 3);
-        } else {
-            $isCollection = true;
-        }
+        $q = $this->parseQuery($q);
+        if (!$q->requestingCollection()) $endpoint .= "/".substr($q, 3);
 
         $r = $this->sendRequest('GET', $endpoint);
         $obj = json_decode($r->getBody(), true);
 
         // Convert to "table of rows" format for inflate
-        if (!$isCollection) $obj = [$obj];
+        if (!$q->requestingCollection()) $obj = [$obj];
         $obj = $this->inflateData($obj, $isCollection);
-        if (!$isCollection) $obj = $obj[0];
+        if (!$q->requestingCollection()) $obj = $obj[0];
 
         return $obj;
+    }
+
+    protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
+        return $this->_saveRest('POST', "/".static::$resourceType, $r);
+    }
+
+    protected function saveExisting(\CFX\JsonApi\ResourceInterface $r) {
+        return $this->_saveRest('PATCH', "/".static::$resourceType."/{$r->getId()}", $r);
+    }
+
+    /**
+     * Convenience method for handling saveNew and saveExisting method calls, which are virtually
+     * the same in REST with the exception of method and endpoint
+     */
+    protected function _saveRest($method, $endpoint, \CFX\JsonApi\ResourceInterface $r) {
+        $r = $this->sendRequest($method, $endpoint, [ 'json' => [ 'data' => $r ] ]);
+
+        // Convert returned data into a "row" for the inflateData function to handle
+        $row = [ json_decode($r->getBody(), true) ];
+        $row = $this->inflateData($row, false);
+
+        // Return resource
+        return $row[0];
+    }
+
+    public function delete($r) {
+        if ($r instanceof \CFX\JsonApi\ResourceInterface) $r = $r->getId();
+        $this->sendRequest('DELETE', "/".static::$resourceType."/$r");
+        return $this;
     }
 
     public function sendRequest($method, $endpoint, array $params=[]) {
@@ -46,7 +69,7 @@ abstract class AbstractDatasource extends \CFX\AbstractDatasource implements Dat
     }
 
     protected function composeUri($endpoint) {
-        return $this->context->getBaseUri()."/v".$this->context->getApiVersion().$endpoint;
+        return $this->context->getBaseUri()."/{$this->context->getApiName()}"."/v{$this->context->getApiVersion()}{$endpoint}";
     }
 
     protected function processResponse($r) {

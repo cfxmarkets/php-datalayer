@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "91db7465b59d97a8f9567cde23790262",
+    "content-hash": "81c82cbe9144ac926b1bba4be58b75fe",
     "packages": [
         {
             "name": "cfxmarkets/php-jsonapi-objects",
