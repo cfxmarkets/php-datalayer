@@ -10,7 +10,6 @@
             "homepage": "https://github.com/cfxmarkets/php-persistence/graphs/contributors"
         }
     ],
-    "minimum-stability": "dev",
     "require" : {
         "php" : ">=5.4",
         "kael-shipman/php-std-traits": "~3.2.1",
@@ -40,7 +39,7 @@
     ],
     "extra": {
         "branch-alias": {
-            "dev-dev-v2": "0.1.x-dev"
+            "dev-v0.1.x": "0.1.x-dev"
         }
     }
 }
