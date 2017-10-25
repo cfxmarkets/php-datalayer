@@ -48,5 +48,9 @@ class PeopleDatasource extends \CFX\Persistence\AbstractDatasource implements \C
     public function testDSLParser($q=null) {
         return $this->parseDSL($q);
     }
+
+    public function testInflateData(array $obj, $isCollection) {
+        return $this->inflateData($obj, $isCollection);
+    }
 }
 

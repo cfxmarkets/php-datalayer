@@ -34,11 +34,8 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         $r = $this->sendRequest($method, $endpoint, [ 'json' => [ 'data' => $r ] ]);
 
         // Convert returned data into a "row" for the inflateData function to handle
-        $row = [ json_decode($r->getBody(), true) ];
-        $row = $this->inflateData($row, false);
-
-        // Return resource
-        return $row[0];
+        $obj = [ json_decode($r->getBody(), true)['data'] ];
+        return $this->inflateData($obj, false);
     }
 
     public function delete($r) {
@@ -47,37 +44,13 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         return $this;
     }
 
-    public function sendRequest($method, $endpoint, array $params=[]) {
-        // Composer URI
-        $uri = $this->composeUri($endpoint);
-
-        // Add Authorization header if necessary
-
-        if (!array_key_exists('headers', $params)) $params['headers'] = [];
-        $authz_header = null;
-        foreach($params['headers'] as $n => $v) {
-            if (strtolower($n) == 'authorization') {
-                $authz_header = $n;
-                break;
-            }
-        }
-
-        if (!$authz_header) $params['headers']['Authorization'] = "Basic ".base64_encode("{$this->context->getApiKey()}:{$this->context->getApiKeySecret()}");
-
-        $r = $this->context->getHttpClient()->createRequest($method, $uri, $params);
-        return $this->processResponse($this->context->getHttpClient()->send($r));
-    }
-
-    protected function composeUri($endpoint) {
-        return $this->context->getBaseUri()."/{$this->context->getApiName()}"."/v{$this->context->getApiVersion()}{$endpoint}";
-    }
-
-    protected function processResponse($r) {
-        if ($r->getStatusCode() >= 500) throw new \RuntimeException("Server Error: ".$r->getBody());
-        elseif ($r->getStatusCode() >= 400) throw new \RuntimeException("User Error: ".$r->getBody());
-        elseif ($r->getStatusCode() >= 300) throw new \RuntimeException("Don't know how to handle 3xx codes.");
-        elseif ($r->getStatusCode() >= 200) return $r;
-        else throw new \RuntimeException("Don't know how to handle 1xx codes.");
+    /**
+     * This method exists to allow datasources to set default parameters for their requests.
+     * For example, certain datasources may always use an OAuth token for authorization,
+     * and that can be set here before the request is sent to the context for processing.
+     */
+    protected function sendRequest($method, $endpoint, array $params=[]) {
+        return $this->context->sendRequest($method, $endpoint, $params);
     }
 }
 

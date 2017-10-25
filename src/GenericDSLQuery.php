@@ -3,11 +3,11 @@ namespace CFX\Persistence;
 
 class GenericDSLQuery implements DSLQueryInterface {
     protected $primaryKey = 'id';
+    protected $primaryKeyValue;
     protected $expressions;
     protected $operator;
     protected $where;
     protected $params = [];
-    protected $requestingCollection = true;
 
     /*
 
@@ -60,19 +60,18 @@ class GenericDSLQuery implements DSLQueryInterface {
         $query = new static();
         if (!$q) return $query;
 
-        if (substr($q, 0, 3) == 'id=') {
+        if (preg_match("/^$query->primaryKey ?= ?([^ &|'\"]+)$/i", $q, $matches)) {
             $query->where = "`$query->primaryKey` = ?";
-            $query->params = [substr($q, 3)];
-            $query->id = $query->params[0];
-            $query->requestingCollection = false;
+            $query->params = [$matches[1]];
+            $query->primaryKeyValue = $query->params[0];
         } else {
-            throw new UnimplementedFeatureException("Sorry, we don't yet support queries beyond `id=....`");
+            throw new BadQueryException("Sorry, we don't yet support queries beyond `id=....`");
         }
         return $query;
     }
 
     public function getId() {
-        return $this->id;
+        return $this->primaryKeyValue;
     }
 
     public function getWhere() {
@@ -84,7 +83,7 @@ class GenericDSLQuery implements DSLQueryInterface {
     }
 
     public function requestingCollection() {
-        return $this->requestingCollection;
+        return $this->getId() === null;
     }
 }
 

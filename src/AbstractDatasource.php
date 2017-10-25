@@ -49,6 +49,13 @@ abstract class AbstractDatasource implements DatasourceInterface {
         return $this;
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function inflateRelated(array $data) {
+        return $this->context->newResource($data, array_key_exists('type', $data) ? $data['type'] : null);
+    }
+
     abstract protected function saveNew(\CFX\JsonApi\ResourceInterface $r);
     abstract protected function saveExisting(\CFX\JsonApi\ResourceInterface $r);
 

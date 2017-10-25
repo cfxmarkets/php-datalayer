@@ -37,3 +37,30 @@ class DuplicateResourceException extends \RuntimeException {
     public function getDuplicateResource() { return $this->duplicate; }
 }
 
+/**
+ * BadQueryException
+ * Someone has passed an invalid DSL Query string to the parser
+ */
+class BadQueryException extends \RuntimeException {
+    protected $badParams = [];
+    protected $badQueryString;
+    public function setBadParams(array $params) {
+        $this->badParams = $params;
+        return $this;
+    }
+    public function addBadParam($param) {
+        $this->badParams[] = $param;
+        return $this;
+    }
+    public function getBadParams() {
+        return $this->badParams;
+    }
+    public function setBadQueryString($str) {
+        $this->badQueryString = $str;
+        return $this;
+    }
+    public function getBadQueryString() {
+        return $this->badQueryString;
+    }
+}
+
