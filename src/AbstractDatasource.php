@@ -2,12 +2,12 @@
 namespace CFX\Persistence;
 
 abstract class AbstractDatasource implements DatasourceInterface {
-    protected static $resourceType;
+    protected $resourceType;
     protected $context;
     protected $currentData;
 
     public function __construct(DataContextInterface $context) {
-        if (static::$resourceType == null) throw new \RuntimeException("Programmer: You need to define this subclient's `\$resourceType` attribute. This should match the type of resources that this client deals in.");
+        if ($this->getResourceType() === null) throw new \RuntimeException("Programmer: You need to define this subclient's `\$resourceType` attribute. This should match the type of resources that this client deals in.");
         $this->context = $context;
     }
 
@@ -17,6 +17,10 @@ abstract class AbstractDatasource implements DatasourceInterface {
 
     public function newCollection(array $data=null) {
         return new \CFX\JsonApi\ResourceCollection($data);
+    }
+
+    public function getResourceType() {
+        return $this->resourceType;
     }
 
     /**
@@ -45,13 +49,21 @@ abstract class AbstractDatasource implements DatasourceInterface {
         return $this;
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function inflateRelated(array $data) {
+        return $this->context->newResource($data, array_key_exists('type', $data) ? $data['type'] : null);
+    }
+
     abstract protected function saveNew(\CFX\JsonApi\ResourceInterface $r);
     abstract protected function saveExisting(\CFX\JsonApi\ResourceInterface $r);
 
     /**
      * inflateData -- use the provided data to create a Resource or ResourceCollection object
      *
-     * @param array $data
+     * @param array $data Should always be in the format of a "table with rows", i.e., `[ ["id" => "1234",
+     * "type" => "examples", "attributes" => [] ] ]`
      * @param bool $isCollection Whether or not this data represents a collection
      * @return \CFX\JsonApi\ResourceInterface|\CFX\JsonApi\ResourceCollectionInterface
      */

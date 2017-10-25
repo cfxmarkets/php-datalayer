@@ -19,5 +19,16 @@ class Person extends \CFX\JsonApi\AbstractResource {
             $this->clearError('name', 'bad');
         }
     }
+
+    public static function getTestData() {
+        return [
+            'id' => '1',
+            'type' => 'test-people',
+            'attributes' => [
+                'name' => 'Jim Chavo'
+            ],
+        ];
+
+    }
 }
 

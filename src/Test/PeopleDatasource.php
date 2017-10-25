@@ -2,7 +2,7 @@
 namespace CFX\Persistence\Test;
 
 class PeopleDatasource extends \CFX\Persistence\AbstractDatasource implements \CFX\JsonApi\DatasourceInterface {
-    protected static $resourceType = 'test-people';
+    protected $resourceType = 'test-people';
     protected $saveType;
 
     public function create(array $data=null) {
@@ -47,6 +47,10 @@ class PeopleDatasource extends \CFX\Persistence\AbstractDatasource implements \C
 
     public function testDSLParser($q=null) {
         return $this->parseDSL($q);
+    }
+
+    public function testInflateData(array $obj, $isCollection) {
+        return $this->inflateData($obj, $isCollection);
     }
 }
 

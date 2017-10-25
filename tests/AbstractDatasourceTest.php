@@ -97,7 +97,15 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $this->assertInstanceOf("\\CFX\\Persistence\\Test\\PeopleCollection", $people);
     }
 
-    public function testConvertToJsonApiWorks() {
+    public function testInflateDataYieldsValidResourceOrCollection() {
+        $this->markTestIncomplete();
+    }
+
+    /**
+     * This tests to ensure that if you send the function raw object data ([ 'id' => '1234', ...] instead of [ ['id' => '1234', ...] ])
+     * the function throws an exception.
+     */
+    public function testInflateDataThrowsErrorWhenGivenObjectIsNotTableFormat() {
         $this->markTestIncomplete();
     }
 }
