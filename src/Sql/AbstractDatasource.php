@@ -9,13 +9,6 @@ namespace CFX\Sql;
  * to their parent `PetStore` context.
  */
 abstract class AbstractDatasource extends \CFX\AbstractDatasource implements DatasourceInterface {
-    public function executeQuery(QueryInterface $query) {
-        $q = $this->context->getPdo($query->database)->prepare($query->constructQuery());
-        $q->execute($query->params);
-
-        return $q->fetchAll(\PDO::FETCH_ASSOC);
-    }
-
     public function delete($r) {
         if (!is_string($r) && !is_int($r) && (!is_object($r) || !($r instanceof \CFX\JsonAapi\ResourceInterface))) throw new \InvalidArgumentException("You must pass either a string ID or a Resource into this function.");
         if (is_object($r)) $r = $r->getId();
