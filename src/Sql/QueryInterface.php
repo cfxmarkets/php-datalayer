@@ -1,5 +1,5 @@
 <?php
-namespace CFX\Sql;
+namespace CFX\Persistence\Sql;
 
 interface QueryInterface {
     public function constructQuery();

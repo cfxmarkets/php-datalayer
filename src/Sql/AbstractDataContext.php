@@ -2,7 +2,7 @@
 namespace CFX\Persistence\Sql;
 
 abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext {
-    $this->pdos;
+    protected $pdos;
 
     /**
      * Construct a SQL Data Context
@@ -29,7 +29,7 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
             $pdo = $this->pdos[$name];
             $this->pdos[$name] = $pdo($this);
         }
-        if ($this->pdos[$name] instanceof \PDO) {
+        if ($this->pdos[$name] instanceof \PDO || $this->pdos[$name] instanceof \CFX\Test\PDO) {
             return $this->pdos[$name];
         }
 

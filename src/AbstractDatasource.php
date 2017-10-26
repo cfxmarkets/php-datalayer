@@ -68,6 +68,8 @@ abstract class AbstractDatasource implements DatasourceInterface {
      * @return \CFX\JsonApi\ResourceInterface|\CFX\JsonApi\ResourceCollectionInterface
      */
     protected function inflateData(array $obj, $isCollection) {
+        if (!$isCollection && count($obj) == 0) throw new ResourceNotFoundException("Sorry, we couldn't find some of the data you were looking for.");
+
         foreach($obj as $k => $o) {
             $this->currentData = $o;
             $obj[$k] = $this->create();

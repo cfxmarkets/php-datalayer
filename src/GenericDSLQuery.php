@@ -65,7 +65,7 @@ class GenericDSLQuery implements DSLQueryInterface {
             $query->params = [$matches[1]];
             $query->primaryKeyValue = $query->params[0];
         } else {
-            throw new BadQueryException("Sorry, we don't yet support queries beyond `id=....`");
+            throw new BadQueryException("Sorry, we don't yet support queries beyond `$query->primaryKey=....`");
         }
         return $query;
     }

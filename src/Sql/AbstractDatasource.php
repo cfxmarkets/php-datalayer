@@ -1,5 +1,5 @@
 <?php
-namespace CFX\Sql;
+namespace CFX\Persistence\Sql;
 
 /**
  * An abstract SQL Datasource
@@ -8,7 +8,7 @@ namespace CFX\Sql;
  * `CatDatasource`, `DogDatasource`, etc. These individual datasources extends from this abstract source, and all contain references
  * to their parent `PetStore` context.
  */
-abstract class AbstractDatasource extends \CFX\AbstractDatasource implements DatasourceInterface {
+abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements \CFX\Persistence\DatasourceInterface {
     public function delete($r) {
         if (!is_string($r) && !is_int($r) && (!is_object($r) || !($r instanceof \CFX\JsonAapi\ResourceInterface))) throw new \InvalidArgumentException("You must pass either a string ID or a Resource into this function.");
         if (is_object($r)) $r = $r->getId();
@@ -43,6 +43,10 @@ abstract class AbstractDatasource extends \CFX\AbstractDatasource implements Dat
         $q = $this->newSqlQuery([ "query" => "INSERT INTO `{$r->getResourceType()}` (`id`, `".implode('`, `', array_keys($data['attributes']))."`) VALUES (".implode(", ", $placeholders).")" ]);
 
         $this->executeQuery($q);
+    }
+
+    protected function executeQuery(QueryInterface $query) {
+        return $this->context->executeQuery($query);
     }
 
     protected function newSqlQuery(array $q=[]) {

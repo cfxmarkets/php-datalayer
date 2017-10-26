@@ -1,5 +1,5 @@
 <?php
-namespace CFX\Sql;
+namespace CFX\Persistence\Sql;
 
 class Query implements QueryInterface {
     protected $properties = [ 'database', 'query', 'where', 'orderBy', 'limit', 'params' ];
