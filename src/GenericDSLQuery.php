@@ -60,12 +60,12 @@ class GenericDSLQuery implements DSLQueryInterface {
         $query = new static();
         if (!$q) return $query;
 
-        if (preg_match("/^$query->primaryKey ?= ?([^ &|'\"]+)$/i", $q, $matches)) {
+        if (preg_match("/^id ?= ?([^ &|'\"]+)$/i", $q, $matches)) {
             $query->where = "`$query->primaryKey` = ?";
             $query->params = [$matches[1]];
             $query->primaryKeyValue = $query->params[0];
         } else {
-            throw new BadQueryException("Sorry, we don't yet support queries beyond `$query->primaryKey=....`");
+            throw new BadQueryException("Sorry, we don't yet support queries beyond `id=....`");
         }
         return $query;
     }

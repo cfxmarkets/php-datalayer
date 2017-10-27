@@ -72,6 +72,10 @@ abstract class AbstractDataContext implements DataContextInterface {
      *
      * This is a factory method for instantiating datasources of various types. It can be overridden in child contexts to
      * provide arbitrary datasources
+     *
+     * @param string $name The name of the datasource you want to instantiate
+     * @return DatasourceInterface The instantiated datasource
+     * @throws UnknownDatasourceException
      */
     protected function instantiateDatasource($name) {
         throw new UnknownDatasourceException("Programmer: Don't know how to handle datasources of type `$name`. If you'd like to handle this, you should either add this datasource to the `instantiateDatasource` method in this class or create a derivative class to which to add it.");

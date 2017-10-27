@@ -72,7 +72,7 @@ abstract class AbstractDatasource implements DatasourceInterface {
 
         foreach($obj as $k => $o) {
             $this->currentData = $o;
-            $obj[$k] = $this->create();
+            $obj[$k] = $this->create(null, 'private');
             if ($this->currentData !== null) throw new \RuntimeException("There appears to be leftover data in the cache. You should make sure that all data objects call this database's `getCurrentData` method from within their constructors. (Offending class: `".get_class($obj[$k])."`. Did you overwrite the default constructor?)");
         }
         return $isCollection ?
@@ -89,68 +89,6 @@ abstract class AbstractDatasource implements DatasourceInterface {
      */
     protected function parseDSL($query) {
         return GenericDSLQuery::parse($query);
-    }
-
-
-    /**
-     * Convert data to JsonApi format
-     *
-     * @param string $type What to put for the `type` parameter
-     * @param array $records The rows of data to convert
-     * @param array $rels An optional list of relationships. Array should be indexed by FIELD NAME, and each item
-     * should be an array whose first value is the `type` of object that the relationship deals with and whose
-     * second value is the `name` of the relationship.
-     * @param string $idField The name of the field that contains the object's ID (Default: 'id')
-     * @return array A collection of resources represented in json api format
-     */
-
-    protected function convertToJsonApi($type, $records, $rels=[], $idField='id') {
-        if (count($records) == 0) return $records;
-
-        $jsonapi = [];
-        foreach($records as $n => $r) {
-            $jsonapi[$n] = [
-                'type' => $type,
-                'id' => $r[$idField],
-                'attributes' => [],
-            ];
-            if (count($rels) > 0) $jsonapi[$n]['relationships'] = [];
-
-            foreach ($r as $field => $v) {
-                if ($field == $idField) continue;
-                if (array_key_exists($field, $rels)) {
-                    // For to-many relationships
-                    if (is_array($v)) {
-                        $rel = [];
-                        foreach($v as $relId) {
-                            $rel[] = [
-                                "data" => [
-                                    "type" => $rels[$field][0],
-                                    "id" => $relId,
-                                ],
-                            ];
-                        }
-
-                    // For to-one relationships
-                    } else {
-                        if (!$v) $rel = [ "data" => null ];
-                        else $rel = [
-                            "data" => [
-                                "type" => $rels[$field][0],
-                                "id" => $v,
-                            ]
-                        ];
-                    }
-
-                    // Add relationship
-                    $jsonapi[$n]['relationships'][$rels[$field][1]] = $rel;
-                } else {
-                    $jsonapi[$n]['attributes'][$field] = $v;
-                }
-            }
-        }
-
-        return $jsonapi;
     }
 }
 

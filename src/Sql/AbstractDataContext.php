@@ -17,7 +17,11 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
         $q = $this->getPdo($query->database)->prepare($query->constructQuery());
         $q->execute($query->params);
 
-        return $q->fetchAll(\PDO::FETCH_ASSOC);
+        if ($q->columnCount() > 0) {
+            return $q->fetchAll(\PDO::FETCH_ASSOC);
+        } else {
+            return $this->getPdo($query->database)->lastInsertId();
+        }
     }
 
     protected function getPdo($name='default') {

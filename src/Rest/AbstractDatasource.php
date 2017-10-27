@@ -52,5 +52,9 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     protected function sendRequest($method, $endpoint, array $params=[]) {
         return $this->context->sendRequest($method, $endpoint, $params);
     }
+
+    public function convert(\CFX\JsonApi\ResourceInterface $src, $convertTo) {
+        return $src;
+    }
 }
 
