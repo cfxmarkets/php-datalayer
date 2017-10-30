@@ -50,7 +50,7 @@ abstract class AbstractDatasource implements DatasourceInterface {
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function inflateRelated(array $data) {
         return $this->context->newResource($data, array_key_exists('type', $data) ? $data['type'] : null);
@@ -67,17 +67,17 @@ abstract class AbstractDatasource implements DatasourceInterface {
      * @param bool $isCollection Whether or not this data represents a collection
      * @return \CFX\JsonApi\ResourceInterface|\CFX\JsonApi\ResourceCollectionInterface
      */
-    protected function inflateData(array $obj, $isCollection) {
-        if (!$isCollection && count($obj) == 0) throw new ResourceNotFoundException("Sorry, we couldn't find some of the data you were looking for.");
+    protected function inflateData(array $data, $isCollection) {
+        if (!$isCollection && count($data) == 0) throw new ResourceNotFoundException("Sorry, we couldn't find some of the data you were looking for.");
 
-        foreach($obj as $k => $o) {
+        foreach($data as $k => $o) {
             $this->currentData = $o;
-            $obj[$k] = $this->create(null, 'private');
-            if ($this->currentData !== null) throw new \RuntimeException("There appears to be leftover data in the cache. You should make sure that all data objects call this database's `getCurrentData` method from within their constructors. (Offending class: `".get_class($obj[$k])."`. Did you overwrite the default constructor?)");
+            $data[$k] = $this->create(null, 'private');
+            if ($this->currentData !== null) throw new \RuntimeException("There appears to be leftover data in the cache. You should make sure that all data objects call this database's `getCurrentData` method from within their constructors. (Offending class: `".get_class($data[$k])."`. Did you overwrite the default constructor?)");
         }
         return $isCollection ?
-            $this->newCollection($obj) :
-            $obj[0]
+            $this->newCollection($data) :
+            $data[0]
         ;
     }
 

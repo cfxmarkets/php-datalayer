@@ -31,11 +31,14 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
      * the same in REST with the exception of method and endpoint
      */
     protected function _saveRest($method, $endpoint, \CFX\JsonApi\ResourceInterface $r) {
-        $r = $this->sendRequest($method, $endpoint, [ 'json' => [ 'data' => $r ] ]);
+        $response = $this->sendRequest($method, $endpoint, [ 'json' => [ 'data' => $r ] ]);
 
-        // Convert returned data into a "row" for the inflateData function to handle
-        $obj = [ json_decode($r->getBody(), true)['data'] ];
-        return $this->inflateData($obj, false);
+        // Use returned data to update resource
+        $data = json_decode($response->getBody(), true)['data'];
+        $this->currentData = $data;
+        $r->restoreFromData();
+
+        return $this;
     }
 
     public function delete($r) {
