@@ -3,11 +3,8 @@ namespace CFX\Persistence;
 
 class GenericDSLQuery implements DSLQueryInterface {
     protected $primaryKey = 'id';
-    protected $primaryKeyValue;
-    protected $expressions;
-    protected $operator;
-    protected $where;
-    protected $params = [];
+    protected $expressions = [];
+    protected $operator = 'and';
 
     /*
 
@@ -40,10 +37,10 @@ class GenericDSLQuery implements DSLQueryInterface {
                     operator: <
                     value: 20051231
                 ),
-                3: Relationship(
+                3: Comparison(
                     field: bestFriend,
                     operator: in
-                    set: ['12345','67890','56473']
+                    value: ['12345','67890','56473']
                 )
             ),
             Operator: 'AND'
@@ -60,30 +57,163 @@ class GenericDSLQuery implements DSLQueryInterface {
         $query = new static();
         if (!$q) return $query;
 
-        if (preg_match("/^id ?= ?([^ &|'\"]+)$/i", $q, $matches)) {
-            $query->where = "`$query->primaryKey` = ?";
-            $query->params = [$matches[1]];
-            $query->primaryKeyValue = $query->params[0];
-        } else {
-            throw new BadQueryException("Sorry, we don't yet support queries beyond `id=....`");
+        if (preg_match("/[()]/", $q)) {
+            throw new BadQueryException("Sorry, grouping is currently not accepted in queries");
         }
+
+        if (strpos($q, " or ") !== false) {
+            throw new BadQueryException("Sorry, 'and' is currently the only supported operator in queries");
+        }
+
+        $q = explode(" and ", trim($q));
+
+        $fieldList = implode("|",$query::getAcceptableFields());
+        $valChars = "[^ &|'\"]";
+
+        foreach($q as $k => $expr) {
+            if (preg_match("/^($fieldList) ?(!?=) ?($valChars+)$/i", $expr, $matches)) {
+                $setField = "set".ucfirst($matches[1]);
+                if (method_exists($query, $setField)) {
+                    $query->$setField($matches[3], $matches[2]);
+                } else {
+                    throw new \RuntimeException(
+                        "Programmer: You must implement a `$setField` method for this class (".get_class($query).") ".
+                        "in order to successfully parse queries with it."
+                    );
+                }
+            } else {
+                throw new BadQueryException(
+                    "Unacceptable fields or values found. Acceptable fields are ($fieldList) and ".
+                    "values must be alpha-numeric with optional dashes or underscores"
+                );
+            }
+        }
+
         return $query;
     }
 
     public function getId() {
-        return $this->primaryKeyValue;
+        return $this->getExpressionValue('id');
+    }
+
+    public function setId($id, $operator) {
+        $this->setExpressionValue('id', [
+            'field' => $this->primaryKey,
+            'operator' => $operator,
+            'value' => $id
+        ]);
+        return $this;
     }
 
     public function getWhere() {
-        return $this->where;
+        $str = [];
+        foreach($this->expressions as $name => $expr) {
+            if ($expr instanceof DSLQueryInterface) {
+                $str[] = (string)$expr;
+            } else {
+                $str[] = "`$expr[field]` $expr[operator] ?";
+            }
+        }
+
+        if (count($str) === 0) {
+            return null;
+        }
+
+        return implode(" $this->operator ", $str);
     }
 
     public function getParams() {
-        return $this->params;
+        $params = [];
+
+        foreach ($this->expressions as $name => $expr) {
+            if ($expr instanceof DSLQueryInterface) {
+                $params = array_merge($params, $expr->getParams());
+            } else {
+                $params[] = $expr['value'];
+            }
+        }
+
+        return $params;
     }
 
     public function requestingCollection() {
-        return $this->getId() === null;
+        return (array_key_exists('id', $this->expressions) && $this->expressions['id']['operator'] == '=');
+    }
+
+    public function setOperator($str) {
+        if (!in_array($str, $this->getLogicalOperators())) {
+            throw new BadQueryException("Sorry, `$str` is not an acceptable operator. Acceptable operators for this query are `".implode('`, `', $this->getLogicalOperators())."`.");
+        }
+        $this->operator = $str;
+    }
+
+    protected function setExpressionValue($name, $val) {
+        if ($val instanceof DSLQueryInterface) {
+            $this->expressions[$name] = $val;
+        } elseif (is_array($val)) {
+            $keys = array_keys($val);
+            sort($keys);
+            if (implode(",", $keys) !== 'field,operator,value') {
+                throw new BadQueryException(
+                    "Programmer: You've passed a bad expression value to this function. Expression values should either be ".
+                    "instances of DSLQueryInterface or arrays containing exactly the keys 'field', 'operator', and 'value'."
+                );
+            }
+
+            if (!in_array($val['operator'], $this::getComparisonOperators())) {
+                throw new BadQueryException(
+                    "The expression you've provided has an illegal comparison operator, `$val[operator]`. ".
+                    "Legal operators are `".implode("`, `", $this::getComparisonOperators())."`."
+                );
+            }
+
+            $this->expressions[$name] = $val;
+        } elseif ($val === null) {
+            unset($this->expressions[$name]);
+        } else {
+            if (gettype($val) === 'object') {
+                $type = get_class($val);
+            } else {
+                $type = gettype($val);
+            }
+
+            throw new \RuntimeException("Don't know how to handle values of type `$type` (object string value: `$val`)");
+        }
+
+        return $this;
+    }
+
+    public function __toString() {
+        $str = [];
+        foreach($this->expressions as $name => $expr) {
+            if ($expr instanceof DSLQueryInterface) {
+                $str[] = "(".$expr.")";
+            } else {
+                $str[] = "$expr[field]$expr[operator]$expr[value]";
+            }
+        }
+
+        return implode(" $this->operator ", $str);
+    }
+
+    protected function getExpressionValue($name) {
+        if (array_key_exists($name, $this->expressions)) {
+            return $this->expressions[$name]['value'];
+        } else {
+            return null;
+        }
+    }
+
+    protected static function getAcceptableFields() {
+        return [ 'id' ];
+    }
+
+    protected static function getLogicalOperators() {
+        return [ 'and', 'or' ];
+    }
+
+    protected static function getComparisonOperators() {
+        return ['=', '!=', 'like', '>', '<', '>=', '<='];
     }
 }
 
