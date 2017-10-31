@@ -44,6 +44,14 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
         }
     }
 
+    public function testDeterminesCollectionCorrectly() {
+        $q = GenericDSLQuery::parse(null);
+        $this->assertTrue($q->requestingCollection());
+
+        $q = GenericDSLQuery::parse("id=12345");
+        $this->assertFalse($q->requestingCollection());
+    }
+
     public function testCanExtendToParseMoreFields() {
         $q = Test\TestDSLQuery::parse("id = 12345 and test1 = 553jjjsd and test2 = someBigId123456");
         $this->assertEquals(12345, $q->getId());

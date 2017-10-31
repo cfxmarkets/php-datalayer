@@ -137,7 +137,7 @@ class GenericDSLQuery implements DSLQueryInterface {
     }
 
     public function requestingCollection() {
-        return (array_key_exists('id', $this->expressions) && $this->expressions['id']['operator'] == '=');
+        return (!array_key_exists('id', $this->expressions) || $this->expressions['id']['operator'] != '=');
     }
 
     public function setOperator($str) {
