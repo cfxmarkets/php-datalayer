@@ -35,7 +35,11 @@ abstract class AbstractDatasource implements DatasourceInterface {
     public function save(\CFX\JsonApi\ResourceInterface $r) {
         // If we're trying to save with errors, throw exception
         if ($r->hasErrors()) {
-            $e = new \CFX\JsonApi\BadInputException("Bad input");
+            $errors = $r->getErrors();
+            foreach($errors as $k => $v) {
+                $errors[$k] = "{$v->getTitle()}: {$v->getDetail()}";
+            }
+            $e = new \CFX\JsonApi\BadInputException("Bad input:\n\n * ".implode("\n * ", $errors));
             $e->setInputErrors($r->getErrors());
             throw $e;
         }
@@ -44,7 +48,24 @@ abstract class AbstractDatasource implements DatasourceInterface {
         if ($r->getId()) $this->saveExisting($r);
 
         // Else, create it
-        else $this->saveNew($r);
+        else {
+            try {
+                $duplicate = $this->getDuplicate($r);
+                if (!($duplicate instanceof \CFX\JsonApi\ResourceInterface)) {
+                    $type = gettype($duplicate);
+                    if ($type === 'object') {
+                        $type = get_class($duplicate);
+                    } else {
+                        $type .= " ($duplicate)";
+                    }
+                    throw new \RuntimeException("Programmer: Your `getDuplicate` function has returned something other than a Resource: `$type`");
+                }
+                throw (new \CFX\Persistence\DuplicateResourceException("You've tried to submit a `{$r->getResourceType()}` resource that's already in our database (duplicate id `{$duplicate->getId()}`)."))
+                    ->setDuplicateResource($duplicate);
+            } catch (\CFX\Persistence\ResourceNotFoundException $e) {
+                $this->saveNew($r);
+            }
+        }
 
         return $this;
     }
@@ -57,17 +78,17 @@ abstract class AbstractDatasource implements DatasourceInterface {
     }
 
     /**
-     * getRelated -- Get a related resource
-     *
-     * @param string $type The JsonApi type of the resource
-     * @param string $id The id
-     * @return \CFX\JsonApi\ResourceInterface
+     * @inheritdoc
      */
-    public function getRelated($type, $id) {
+    public function getRelated($name, $id) {
         try {
-            return $this->context->datasourceForType($type)->get("id=$id");
+            return $this->context->datasourceForType($name)->get("id=$id");
         } catch (UnknownDatasourceException $e) {
-            throw new UnknownDatasourceException("Don't know how to get resources of type `$type`. Are you sure this is a related resource?");
+            throw new UnknownDatasourceException(
+                "Don't know how to get resources of type `$name`. Are you sure this is a related resource? (Hint: You ".
+                "may need to override the default `getRelated` method by defining a new one in `".get_class($this)."`. ".
+                "You should handle `$name` there, then pass other calls on to the parent method.)"
+            );
         }
     }
 
@@ -85,6 +106,7 @@ abstract class AbstractDatasource implements DatasourceInterface {
         return $this;
     }
 
+    abstract public function getDuplicate(\CFX\JsonApi\ResourceInterface $r);
     abstract protected function saveNew(\CFX\JsonApi\ResourceInterface $r);
     abstract protected function saveExisting(\CFX\JsonApi\ResourceInterface $r);
 

@@ -68,10 +68,10 @@ class GenericDSLQuery implements DSLQueryInterface {
         $q = explode(" and ", trim($q));
 
         $fieldList = implode("|",$query::getAcceptableFields());
-        $valChars = "[^ &|'\"]";
+        $valSpec = $query::getFieldValueSpecification();
 
         foreach($q as $k => $expr) {
-            if (preg_match("/^($fieldList) ?(!?=) ?($valChars+)$/i", $expr, $matches)) {
+            if (preg_match("/^($fieldList) ?(!?=) ?$valSpec$/i", $expr, $matches)) {
                 $setField = "set".ucfirst($matches[1]);
                 if (method_exists($query, $setField)) {
                     $query->$setField($matches[2], $matches[3]);
@@ -111,7 +111,11 @@ class GenericDSLQuery implements DSLQueryInterface {
             if ($expr instanceof DSLQueryInterface) {
                 $str[] = (string)$expr;
             } else {
-                $str[] = "`$expr[field]` $expr[operator] ?";
+                if (array_key_exists('options', $expr) && array_key_exists('no-quote', $expr['options'])) {
+                    $str[] = "$expr[field] $expr[operator] ?";
+                } else {
+                    $str[] = "`$expr[field]` $expr[operator] ?";
+                }
             }
         }
 
@@ -137,7 +141,7 @@ class GenericDSLQuery implements DSLQueryInterface {
     }
 
     public function requestingCollection() {
-        return (!array_key_exists('id', $this->expressions) || $this->expressions['id']['operator'] != '=');
+        return !$this->includes('id');
     }
 
     public function setOperator($str) {
@@ -153,7 +157,8 @@ class GenericDSLQuery implements DSLQueryInterface {
         } elseif (is_array($val)) {
             $keys = array_keys($val);
             sort($keys);
-            if (implode(",", $keys) !== 'field,operator,value') {
+            $test = implode(",", $keys);
+            if ($test !== 'field,operator,value' && $test !== 'field,operator,options,value') {
                 throw new BadQueryException(
                     "Programmer: You've passed a bad expression value to this function. Expression values should either be ".
                     "instances of DSLQueryInterface or arrays containing exactly the keys 'field', 'operator', and 'value'."
@@ -204,6 +209,17 @@ class GenericDSLQuery implements DSLQueryInterface {
         }
     }
 
+    /**
+     * Should return true if the named field is among the expressions AND the operator
+     * for the field is '='
+     */
+    public function includes($name) {
+        return
+            array_key_exists($name, $this->expressions) &&
+            $this->expressions[$name]['operator'] == '='
+        ;
+    }
+
     protected static function getAcceptableFields() {
         return [ 'id' ];
     }
@@ -214,6 +230,10 @@ class GenericDSLQuery implements DSLQueryInterface {
 
     protected static function getComparisonOperators() {
         return ['=', '!=', 'like', '>', '<', '>=', '<='];
+    }
+
+    protected static function getFieldValueSpecification() {
+        return "([^ &|'\"]+)";
     }
 }
 

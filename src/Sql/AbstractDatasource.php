@@ -42,10 +42,19 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
             $rels = array_keys($data['relationships']);
             for($i = 0, $ln = count($rels); $i < $ln; $i++) {
                 $column = $this->mapRelationship($rels[$i], 'column');
+                if (!$column) {
+                    continue;
+                }
+
                 $val = $data['relationships'][$rels[$i]]->getData();
                 $val = $val ? $val->getId() : null;
                 $fields[$column] = $val;
             }
+        }
+
+        // If there are no changes, just return
+        if (count($fields) === 0) {
+            return $this;
         }
 
         $q = $this->newSqlQuery([
@@ -55,6 +64,8 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         ]);
 
         $this->executeQuery($q);
+
+        return $this;
     }
 
     protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
@@ -84,7 +95,12 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         if (array_key_exists('relationships', $data)) {
             $rels = array_keys($data['relationships']);
             for($i = 0, $ln = count($rels); $i < $ln; $i++) {
-                $columns[] = $this->mapRelationship($rels[$i], 'column');
+                $column = $this->mapRelationship($rels[$i], 'column');
+                if (!$column) {
+                    continue;
+                }
+
+                $columns[] = $column;
                 $placeholders[] = '?';
                 $val = $data['relationships'][$rels[$i]]->getData();
                 $vals[] = $val ? $val->getId() : null;
@@ -97,6 +113,8 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         ]);
 
         $this->executeQuery($q);
+
+        return $this;
     }
 
     protected function getTableName() {
