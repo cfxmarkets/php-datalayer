@@ -56,6 +56,35 @@ abstract class AbstractDatasource implements DatasourceInterface {
         return $this->context->newResource($data, array_key_exists('type', $data) ? $data['type'] : null);
     }
 
+    /**
+     * getRelated -- Get a related resource
+     *
+     * @param string $type The JsonApi type of the resource
+     * @param string $id The id
+     * @return \CFX\JsonApi\ResourceInterface
+     */
+    public function getRelated($type, $id) {
+        try {
+            return $this->context->datasourceForType($type)->get("id=$id");
+        } catch (UnknownDatasourceException $e) {
+            throw new UnknownDatasourceException("Don't know how to get resources of type `$type`. Are you sure this is a related resource?");
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function initializeResource(\CFX\JsonApi\ResourceInterface $r) {
+        if (!$r->getId()) {
+            return $this;
+        }
+
+        $targ = $this->get("id=".$r->getId());
+        $this->currentData = $targ->jsonSerialize();
+        $r->restoreFromData();
+        return $this;
+    }
+
     abstract protected function saveNew(\CFX\JsonApi\ResourceInterface $r);
     abstract protected function saveExisting(\CFX\JsonApi\ResourceInterface $r);
 

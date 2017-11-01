@@ -74,7 +74,7 @@ class GenericDSLQuery implements DSLQueryInterface {
             if (preg_match("/^($fieldList) ?(!?=) ?($valChars+)$/i", $expr, $matches)) {
                 $setField = "set".ucfirst($matches[1]);
                 if (method_exists($query, $setField)) {
-                    $query->$setField($matches[3], $matches[2]);
+                    $query->$setField($matches[2], $matches[3]);
                 } else {
                     throw new \RuntimeException(
                         "Programmer: You must implement a `$setField` method for this class (".get_class($query).") ".
@@ -84,7 +84,7 @@ class GenericDSLQuery implements DSLQueryInterface {
             } else {
                 throw new BadQueryException(
                     "Unacceptable fields or values found. Acceptable fields are ($fieldList) and ".
-                    "values must be alpha-numeric with optional dashes or underscores"
+                    "values must be alpha-numeric with optional dashes or underscores. Offending expression: `$expr`"
                 );
             }
         }
@@ -96,7 +96,7 @@ class GenericDSLQuery implements DSLQueryInterface {
         return $this->getExpressionValue('id');
     }
 
-    public function setId($id, $operator) {
+    public function setId($operator, $id) {
         $this->setExpressionValue('id', [
             'field' => $this->primaryKey,
             'operator' => $operator,
@@ -189,7 +189,7 @@ class GenericDSLQuery implements DSLQueryInterface {
             if ($expr instanceof DSLQueryInterface) {
                 $str[] = "(".$expr.")";
             } else {
-                $str[] = "$expr[field]$expr[operator]$expr[value]";
+                $str[] = "$name$expr[operator]$expr[value]";
             }
         }
 

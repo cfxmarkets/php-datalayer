@@ -33,6 +33,7 @@ class DuplicateResourceException extends \RuntimeException {
     protected $duplicate;
     public function setDuplicateResource(\CFX\JsonApi\ResourceInterface $resource) {
         $this->duplicate = $resource;
+        return $this;
     }
     public function getDuplicateResource() { return $this->duplicate; }
 }
