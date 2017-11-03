@@ -111,11 +111,20 @@ class GenericDSLQuery implements DSLQueryInterface {
             if ($expr instanceof DSLQueryInterface) {
                 $str[] = (string)$expr;
             } else {
-                if (array_key_exists('options', $expr) && array_key_exists('no-quote', $expr['options'])) {
-                    $str[] = "$expr[field] $expr[operator] ?";
-                } else {
-                    $str[] = "`$expr[field]` $expr[operator] ?";
+                $v = '';
+                if (array_key_exists('db', $expr)) {
+                    $v .= "`$expr[db]`.";
                 }
+                if (array_key_exists('table', $expr)) {
+                    $v .= "`$expr[table]`.";
+                }
+                if (array_key_exists('options', $expr) && array_key_exists('no-quote', $expr['options'])) {
+                    $v .= $expr['field'];
+                } else {
+                    $v .= "`$expr[field]`";
+                }
+                $v .= " $expr[operator] ?";
+                $str[] = $v;
             }
         }
 
@@ -133,7 +142,11 @@ class GenericDSLQuery implements DSLQueryInterface {
             if ($expr instanceof DSLQueryInterface) {
                 $params = array_merge($params, $expr->getParams());
             } else {
-                $params[] = $expr['value'];
+                if (is_array($expr['value'])) {
+                    $params = array_merge($params, $expr['value']);
+                } else {
+                    $params[] = $expr['value'];
+                }
             }
         }
 
@@ -155,13 +168,10 @@ class GenericDSLQuery implements DSLQueryInterface {
         if ($val instanceof DSLQueryInterface) {
             $this->expressions[$name] = $val;
         } elseif (is_array($val)) {
-            $keys = array_keys($val);
-            sort($keys);
-            $test = implode(",", $keys);
-            if ($test !== 'field,operator,value' && $test !== 'field,operator,options,value') {
+            if (count(array_diff(['field','operator','value'], array_keys($val))) !== 0) {
                 throw new BadQueryException(
                     "Programmer: You've passed a bad expression value to this function. Expression values should either be ".
-                    "instances of DSLQueryInterface or arrays containing exactly the keys 'field', 'operator', and 'value'."
+                    "instances of DSLQueryInterface or arrays containing at least the keys 'field', 'operator', and 'value'."
                 );
             }
 
