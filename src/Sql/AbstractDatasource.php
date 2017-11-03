@@ -10,7 +10,16 @@ namespace CFX\Persistence\Sql;
  */
 abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements \CFX\Persistence\DatasourceInterface {
     public function delete($r) {
-        if (!is_string($r) && !is_int($r) && (!is_object($r) || !($r instanceof \CFX\JsonAapi\ResourceInterface))) throw new \InvalidArgumentException("You must pass either a string ID or a Resource into this function.");
+        if (!is_string($r) && !is_int($r) && (!is_object($r) || !($r instanceof \CFX\JsonApi\ResourceInterface))) {
+            $type = gettype($r);
+            if ($type === 'object') {
+                $type = "`".get_class($r)."`";
+            } else {
+                $type = "`$type($r)`";
+            }
+            throw new \InvalidArgumentException("You must pass either a string ID or a Resource into this function. (You passed $type.)");
+        }
+
         if (is_object($r)) $r = $r->getId();
 
         if ($r === null) throw new \CFX\UnidentifiedResourceException("Can't delete resource because the resource you're trying to delete doesn't have an ID.");
