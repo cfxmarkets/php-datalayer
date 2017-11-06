@@ -9,6 +9,9 @@ namespace CFX\Persistence\Sql;
  * to their parent `PetStore` context.
  */
 abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements \CFX\Persistence\DatasourceInterface {
+    protected $fieldMap = [];
+    protected $primaryKeyName = 'id';
+
     public function delete($r) {
         if (!is_string($r) && !is_int($r) && (!is_object($r) || !($r instanceof \CFX\JsonApi\ResourceInterface))) {
             $type = gettype($r);
@@ -25,8 +28,8 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         if ($r === null) throw new \CFX\UnidentifiedResourceException("Can't delete resource because the resource you're trying to delete doesn't have an ID.");
 
         $this->executeQuery($this->newSqlQuery([
-            'query' => "DELETE FROM `{$this->getTableName()}`",
-            'where' => '`id` = ?',
+            'query' => "DELETE FROM {$this->getAddress()}",
+            'where' => "`{$this->getPrimaryKeyName()}` = ?",
             'params' => [$r],
         ]));
 
@@ -43,6 +46,9 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         $attrs = array_keys($data['attributes']);
         for($i = 0, $ln = count($attrs); $i < $ln; $i++) {
             $column = $this->mapAttribute($attrs[$i], 'column');
+            if (!$column) {
+                continue;
+            }
             $fields[$column] = $data['attributes'][$attrs[$i]];
         }
 
@@ -67,8 +73,8 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         }
 
         $q = $this->newSqlQuery([
-            'query' => "UPDATE `{$this->getTableName()}` SET `".implode("` = ?, `", array_keys($fields))."` = ?",
-            'where' => '`id` = ?',
+            'query' => "UPDATE {$this->getAddress()} SET `".implode("` = ?, `", array_keys($fields))."` = ?",
+            'where' => "`{$this->getPrimaryKeyName()}` = ?",
             'params' => array_merge(array_values($fields), [$r->getId()]),
         ]);
 
@@ -95,7 +101,11 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         // Add attributes
         $attrs = array_keys($data['attributes']);
         for($i = 0, $ln = count($attrs); $i < $ln; $i++) {
-            $columns[] = $this->mapAttribute($attrs[$i], 'column');
+            $column = $this->mapAttribute($attrs[$i], 'column');
+            if (!$column) {
+                continue;
+            }
+            $columns[] = $column;
             $placeholders[] = '?';
             $vals[] = $data['attributes'][$attrs[$i]];
         }
@@ -117,7 +127,7 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         }
 
         $q = $this->newSqlQuery([
-            "query" => "INSERT INTO `{$this->getTableName()}` (`".implode('`, `', $columns)."`) VALUES (".implode(", ", $placeholders).")",
+            "query" => "INSERT INTO {$this->getAddress()} (`".implode('`, `', $columns)."`) VALUES (".implode(", ", $placeholders).")",
             "params" => $vals
         ]);
 
@@ -126,20 +136,59 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         return $this;
     }
 
+    protected function getDbName() {
+        return null;
+    }
+
     protected function getTableName() {
         return $this->getResourceType();
     }
 
     protected function getPrimaryKeyName() {
-        return 'id';
+        return $this->primaryKeyName;
     }
 
-    protected function mapAttribute($attr, $to) {
-        return $attr;
+    protected function getAddress() {
+        $addr = [];
+        $dbName = $this->getDbName();
+        if ($dbName) {
+            $addr[] = $dbName;
+        }
+        $addr[] = $this->getTableName();
+        return "`".implode("`.`", $addr)."`";
+    }
+
+    protected function mapAttribute($name, $to)
+    {   
+        if ($to === 'column') {
+            if (array_key_exists($name, $this->fieldMap)) {
+                return $this->fieldMap[$name];
+            }   
+        } elseif ($to === 'field') {
+            if (($field = array_search($name, $this->fieldMap)) !== false) {
+                return $field;
+            }   
+        }   
+
+        return $name;
     }
 
     protected function mapRelationship($rel, $to) {
-        return "{$rel}Id";
+        if ($to === 'column') {
+            if (array_key_exists($rel, $this->fieldMap)) {
+                return $this->fieldMap[$rel];
+            }   
+            return "{$rel}Id";
+        } elseif ($to === 'field') {
+            if (($field = array_search($rel, $this->fieldMap)) !== false) {
+                return $field;
+            }   
+            if (strtolower(substr($rel, -2)) === 'id') {
+                return substr($rel, 0, -2);
+            } else {
+                return $rel;
+            }
+        }
     }
 
     protected function executeQuery(QueryInterface $query) {
