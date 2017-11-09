@@ -72,11 +72,20 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
     }
 
     protected function processResponse($r) {
-        if ($r->getStatusCode() >= 500) throw new \RuntimeException("Server Error: ".$r->getBody());
-        elseif ($r->getStatusCode() >= 400) throw new \RuntimeException("User Error: ".$r->getBody());
-        elseif ($r->getStatusCode() >= 300) throw new \RuntimeException("Don't know how to handle 3xx codes.");
-        elseif ($r->getStatusCode() >= 200) return $r;
-        else throw new \RuntimeException("Don't know how to handle 1xx codes.");
+        if ($r->getStatusCode() >= 500) {
+            throw new \RuntimeException("Server Error: ".$r->getBody());
+        } elseif ($r->getStatusCode() >= 400) {
+            if ($r->getStatusCode() === 404) {
+                throw new \CFX\Persistence\ResourceNotFoundException("The resource you're looking for wasn't found in our system");
+            }
+            throw new \RuntimeException("User Error: ".$r->getBody());
+        } elseif ($r->getStatusCode() >= 302) {
+            throw new \RuntimeException("Don't know how to handle 3xx codes.");
+        } elseif ($r->getStatusCode() >= 200) {
+            return $r;
+        } else {
+            throw new \RuntimeException("Don't know how to handle 1xx codes.");
+        }
     }
 }
 

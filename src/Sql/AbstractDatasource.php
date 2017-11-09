@@ -11,6 +11,8 @@ namespace CFX\Persistence\Sql;
 abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements \CFX\Persistence\DatasourceInterface {
     protected $fieldMap = [];
     protected $primaryKeyName = 'id';
+    protected $generatePrimaryKey = true;
+    protected $lastInsertId;
 
     public function delete($r) {
         if (!is_string($r) && !is_int($r) && (!is_object($r) || !($r instanceof \CFX\JsonApi\ResourceInterface))) {
@@ -84,19 +86,29 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     }
 
     protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
-        $r->setId(md5(uniqid()));
-        if (!$r->getId()) {
-            throw new \RuntimeException(
-                "Looks like the `id` field for this resource is still set to read-only. You should be add the `\CFX\JsonApi\PrivateResourceTrait` ".
-                "to any private resources you create to allow them to set the ID field."
-            );
+        if ($this->generatePrimaryKey) {
+            $r->setId(md5(uniqid()));
+            if (!$r->getId()) {
+                throw new \RuntimeException(
+                    "Looks like the `id` field for this resource is still set to read-only. You should be add the `\CFX\JsonApi\PrivateResourceTrait` ".
+                    "to any private resources you create to allow them to set the ID field."
+                );
+            }
         }
+
         $data = $r->jsonSerialize();
 
         // Initialize inserts
-        $columns = [ $this->getPrimaryKeyName() ];
-        $placeholders = ['?'];
-        $vals = [ $r->getId() ];
+        $columns = [];
+        $placeholders = [];
+        $vals = [];
+
+        // Add ID, if applicable
+        if ($this->generatePrimaryKey) {
+            $columns[] = $this->getPrimaryKeyName();
+            $placeholders[] = '?';
+            $vals[] = $r->getId();
+        }
 
         // Add attributes
         $attrs = array_keys($data['attributes']);
@@ -131,9 +143,19 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
             "params" => $vals
         ]);
 
-        $this->executeQuery($q);
+        $this->lastInsertId = $this->executeQuery($q);
 
         return $this;
+    }
+
+    /**
+     * getLastInsertId -- Get the auto-generated id of the last insert
+     *
+     * @return string|int|null The last insert id
+     */
+    public function getLastInsertId()
+    {
+        return $this->lastInsertId;
     }
 
     protected function getDbName() {

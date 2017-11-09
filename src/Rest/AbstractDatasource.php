@@ -9,6 +9,9 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
 
         $r = $this->sendRequest('GET', $endpoint);
         $obj = json_decode($r->getBody(), true);
+        if (!$obj && $this->debug) {
+            throw new \RuntimeException("Uh oh! The CFX Api Server seems to have screwed up. It didn't return valid json data. Here's what it returned:\n\n".$r->getBody());
+        }
         $obj = $obj['data'];
 
         // Convert to "table of rows" format for inflate
@@ -16,6 +19,11 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         $obj = $this->inflateData($obj, $q->requestingCollection());
 
         return $obj;
+    }
+
+    public function getDuplicate(\CFX\JsonApi\ResourceInterface $r)
+    {
+        throw new \CFX\Persistence\ResourceNotFoundException("Not searching for duplicate resource.");
     }
 
     protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
@@ -35,6 +43,9 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
 
         // Use returned data to update resource
         $data = json_decode($response->getBody(), true)['data'];
+        if (!$data && $this->debug) {
+            throw new \RuntimeException("Uh oh! The CFX Api Server seems to have screwed up. It didn't return valid json data. Here's what it returned:\n\n".$response->getBody());
+        }
         $this->currentData = $data;
         $r->restoreFromData();
 

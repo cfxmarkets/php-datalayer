@@ -3,9 +3,14 @@ namespace CFX\Persistence;
 
 abstract class AbstractDataContext implements DataContextInterface {
     /**
-     * Cache of child datasources
+     * @var DatasourceInterface[] Cache of child datasources
      */
     protected $datasources = [];
+
+    /**
+     * @var bool A debug flag to help in debugging
+     */
+    protected $debug;
 
 
 
@@ -14,7 +19,8 @@ abstract class AbstractDataContext implements DataContextInterface {
      * Convenience method for turning datasource "getter" methods into read-only properties
      */
     public function __get($name) {
-        return $this->getNamedDatasource($name);
+        return $this->getNamedDatasource($name)
+            ->setDebug($this->debug);
     }
 
     /**
@@ -27,7 +33,8 @@ abstract class AbstractDataContext implements DataContextInterface {
         $type = implode('', $type);
 
         // Try to return a datasource with that name
-        return $this->getNamedDatasource($type);
+        return $this->getNamedDatasource($type)
+            ->setDebug($this->debug);
     }
 
     /**
@@ -79,6 +86,26 @@ abstract class AbstractDataContext implements DataContextInterface {
      */
     protected function instantiateDatasource($name) {
         throw new UnknownDatasourceException("Programmer: Don't know how to handle datasources of type `$name`. If you'd like to handle this, you should either add this datasource to the `instantiateDatasource` method in this class or create a derivative class to which to add it.");
+    }
+
+
+
+
+    /**
+     * setDebug -- set the debug flag
+     *
+     * @param bool $debug Sets the debug flag to the given value
+     * @return static Returns the object itself.
+     */
+    public function setDebug($debug)
+    {
+        $this->debug = (bool)$debug;
+
+        foreach($this->datasources as $d) {
+            $d->debug($this->debug);
+        }
+
+        return $this;
     }
 }
 

@@ -6,6 +6,11 @@ abstract class AbstractDatasource implements DatasourceInterface {
     protected $context;
     protected $currentData;
 
+    /**
+     * @var bool A debug flag to help in debugging
+     */
+    protected $debug = false;
+
     public function __construct(DataContextInterface $context) {
         if ($this->getResourceType() === null) throw new \RuntimeException("Programmer: You need to define this subclient's `\$resourceType` attribute. This should match the type of resources that this client deals in.");
         $this->context = $context;
@@ -140,6 +145,18 @@ abstract class AbstractDatasource implements DatasourceInterface {
      */
     protected function parseDSL($query) {
         return GenericDSLQuery::parse($query);
+    }
+
+
+    /**
+     * setDebug -- set the debug flag
+     *
+     * @param bool $debug Sets the debug flag to the given value
+     * @return static Returns the object itself.
+     */
+    public function setDebug($debug) {
+        $this->debug = (bool)$debug;
+        return $this;
     }
 }
 
