@@ -51,7 +51,7 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
             if (!$column) {
                 continue;
             }
-            $fields[$column] = $data['attributes'][$attrs[$i]];
+            $fields[$column] = $this->getParamValue($attrs[$i], $data, $r);
         }
 
         // Add relationships
@@ -63,9 +63,7 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
                     continue;
                 }
 
-                $val = $data['relationships'][$rels[$i]]->getData();
-                $val = $val ? $val->getId() : null;
-                $fields[$column] = $val;
+                $fields[$column] = $this->getParamValue($rels[$i], $data, $r);
             }
         }
 
@@ -119,7 +117,7 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
             }
             $columns[] = $column;
             $placeholders[] = '?';
-            $vals[] = $data['attributes'][$attrs[$i]];
+            $vals[] = $this->getParamValue($attrs[$i], $data, $r);
         }
 
         // Add relationships
@@ -133,8 +131,7 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
 
                 $columns[] = $column;
                 $placeholders[] = '?';
-                $val = $data['relationships'][$rels[$i]]->getData();
-                $vals[] = $val ? $val->getId() : null;
+                $vals[] = $this->getParamValue($rels[$i], $data, $r);
             }
         }
 
@@ -209,6 +206,41 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
                 return substr($rel, 0, -2);
             } else {
                 return $rel;
+            }
+        }
+    }
+
+    /**
+     * Get the database value for the given field
+     *
+     * $data is primarily used, but the Resource parameter may also be used by derivative method
+     * implementations to compose complex values.
+     *
+     * @param string $field The field whose value to return
+     * @param array $data The object's data in jsonapi format
+     * @param \CFX\JsonApi\ResourceInterface $r The resource, just in case
+     * @return mixed The database value for `$field`
+     */
+    protected function getParamValue($field, array $data, \CFX\JsonApi\ResourceInterface $r)
+    {
+        if ($field === $this->primaryKeyName) {
+            if (array_key_exists('id', $data)) {
+                return $data['id'];
+            } else {
+                return null;
+            }
+        } elseif (array_key_exists($field, $data['attributes'])) {
+            return $data['attributes'][$field];
+        } elseif (array_key_exists('relationships', $data) && array_key_exists($field, $data['relationships'])) {
+            $val = $data['relationships'][$field]->getData();
+            if ($val) {
+                if ($val->getId()) {
+                    return $val->getId();
+                } else {
+                    throw new \RuntimeException("Programmer: You've passed an object of type `{$val->getResourceType()}` to be saved that doesn't have an id.");
+                }
+            } else {
+                return null;
             }
         }
     }

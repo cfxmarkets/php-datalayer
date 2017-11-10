@@ -44,7 +44,7 @@ abstract class AbstractDataContext implements DataContextInterface {
         try {
             return $this->datasourceForType($type)->create($data, $validAttrs, $validRels);
         } catch (UnknownDatasourceException $e) {
-            throw new UnknownResourceTypeException("Type `$type` is unknown. You can handle this type by adding a valid client for it to your DataContext.");
+            throw new UnknownResourceTypeException("Type `$type` is unknown. You can handle this type by adding a valid client for it to your DataContext (`".get_class($this)."`).");
         }
     }
 
