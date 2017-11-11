@@ -243,7 +243,7 @@ class GenericDSLQuery implements DSLQueryInterface {
     }
 
     protected static function getFieldValueSpecification() {
-        return "([^ &|'\"]+)";
+        return "([^ &'\"]+)";
     }
 }
 
