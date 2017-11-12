@@ -79,7 +79,7 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
                 throw new \CFX\Persistence\ResourceNotFoundException("The resource you're looking for wasn't found in our system");
             }
             throw new \RuntimeException("User Error: ".$r->getBody());
-        } elseif ($r->getStatusCode() >= 302) {
+        } elseif ($r->getStatusCode() >= 300) {
             throw new \RuntimeException("Don't know how to handle 3xx codes.");
         } elseif ($r->getStatusCode() >= 200) {
             return $r;
