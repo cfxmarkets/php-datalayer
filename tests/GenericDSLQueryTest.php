@@ -29,7 +29,7 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
                 $q = GenericDSLQuery::parse($dsl);
                 $this->fail("Should have thrown exception");
             } catch (\CFX\Persistence\BadQueryException $e) {
-                $this->assertContains("Sorry, we don't yet support queries beyond", $e->getMessage());
+                $this->assertContains("Unacceptable fields or values", $e->getMessage());
             }
         }
     }
@@ -42,6 +42,24 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
             $this->assertEquals("`id` = ?", $q->getWhere());
             $this->assertEquals([$id], $q->getParams());
         }
+    }
+
+    public function testDeterminesCollectionCorrectly() {
+        $q = GenericDSLQuery::parse(null);
+        $this->assertTrue($q->requestingCollection());
+
+        $q = GenericDSLQuery::parse("id=12345");
+        $this->assertFalse($q->requestingCollection());
+    }
+
+    public function testCanExtendToParseMoreFields() {
+        $q = Test\TestDSLQuery::parse("id = 12345 and test1 = 553jjjsd and test2 = someBigId123456");
+        $this->assertEquals(12345, $q->getId());
+        $this->assertEquals('553jjjsd', $q->getTest1());
+        $this->assertEquals('someBigId123456', $q->getTest2());
+        $this->assertEquals("`id` = ? and `test1` = ? and `test2` = ?", $q->getWhere());
+        $this->assertEquals(['12345', '553jjjsd', 'someBigId123456'], $q->getParams());
+        $this->assertEquals("id=12345 and test1=553jjjsd and test2=someBigId123456", (string)$q);
     }
 }
 

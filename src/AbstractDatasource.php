@@ -6,6 +6,11 @@ abstract class AbstractDatasource implements DatasourceInterface {
     protected $context;
     protected $currentData;
 
+    /**
+     * @var bool A debug flag to help in debugging
+     */
+    protected $debug = false;
+
     public function __construct(DataContextInterface $context) {
         if ($this->getResourceType() === null) throw new \RuntimeException("Programmer: You need to define this subclient's `\$resourceType` attribute. This should match the type of resources that this client deals in.");
         $this->context = $context;
@@ -35,7 +40,11 @@ abstract class AbstractDatasource implements DatasourceInterface {
     public function save(\CFX\JsonApi\ResourceInterface $r) {
         // If we're trying to save with errors, throw exception
         if ($r->hasErrors()) {
-            $e = new \CFX\JsonApi\BadInputException("Bad input");
+            $errors = $r->getErrors();
+            foreach($errors as $k => $v) {
+                $errors[$k] = "{$v->getTitle()}: {$v->getDetail()}";
+            }
+            $e = new \CFX\JsonApi\BadInputException("Bad input:\n\n * ".implode("\n * ", $errors));
             $e->setInputErrors($r->getErrors());
             throw $e;
         }
@@ -44,18 +53,65 @@ abstract class AbstractDatasource implements DatasourceInterface {
         if ($r->getId()) $this->saveExisting($r);
 
         // Else, create it
-        else $this->saveNew($r);
+        else {
+            try {
+                $duplicate = $this->getDuplicate($r);
+                if (!($duplicate instanceof \CFX\JsonApi\ResourceInterface)) {
+                    $type = gettype($duplicate);
+                    if ($type === 'object') {
+                        $type = get_class($duplicate);
+                    } else {
+                        $type .= " ($duplicate)";
+                    }
+                    throw new \RuntimeException("Programmer: Your `getDuplicate` function has returned something other than a Resource: `$type`");
+                }
+                throw (new \CFX\Persistence\DuplicateResourceException("You've tried to submit a `{$r->getResourceType()}` resource that's already in our database (duplicate id `{$duplicate->getId()}`)."))
+                    ->setDuplicateResource($duplicate);
+            } catch (\CFX\Persistence\ResourceNotFoundException $e) {
+                $this->saveNew($r);
+            }
+        }
 
         return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function inflateRelated(array $data) {
         return $this->context->newResource($data, array_key_exists('type', $data) ? $data['type'] : null);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function getRelated($name, $id) {
+        try {
+            return $this->context->datasourceForType($name)->get("id=$id");
+        } catch (UnknownDatasourceException $e) {
+            throw new UnknownDatasourceException(
+                "Don't know how to get resources of type `$name`. Are you sure this is a related resource? (Hint: You ".
+                "may need to override the default `getRelated` method by defining a new one in `".get_class($this)."`. ".
+                "You should handle `$name` there, then pass other calls on to the parent method.)"
+            );
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function initializeResource(\CFX\JsonApi\ResourceInterface $r) {
+        if (!$r->getId()) {
+            return $this;
+        }
+
+        $targ = $this->get("id=".$r->getId());
+        $this->currentData = $targ->jsonSerialize();
+        $r->restoreFromData();
+        return $this;
+    }
+
+    abstract public function getDuplicate(\CFX\JsonApi\ResourceInterface $r);
     abstract protected function saveNew(\CFX\JsonApi\ResourceInterface $r);
     abstract protected function saveExisting(\CFX\JsonApi\ResourceInterface $r);
 
@@ -67,15 +123,17 @@ abstract class AbstractDatasource implements DatasourceInterface {
      * @param bool $isCollection Whether or not this data represents a collection
      * @return \CFX\JsonApi\ResourceInterface|\CFX\JsonApi\ResourceCollectionInterface
      */
-    protected function inflateData(array $obj, $isCollection) {
-        foreach($obj as $k => $o) {
+    protected function inflateData(array $data, $isCollection) {
+        if (!$isCollection && count($data) == 0) throw new ResourceNotFoundException("Sorry, we couldn't find some of the data you were looking for.");
+
+        foreach($data as $k => $o) {
             $this->currentData = $o;
-            $obj[$k] = $this->create();
-            if ($this->currentData !== null) throw new \RuntimeException("There appears to be leftover data in the cache. You should make sure that all data objects call this database's `getCurrentData` method from within their constructors. (Offending class: `".get_class($obj[$k])."`. Did you overwrite the default constructor?)");
+            $data[$k] = $this->create(null, 'private');
+            if ($this->currentData !== null) throw new \RuntimeException("There appears to be leftover data in the cache. You should make sure that all data objects call this database's `getCurrentData` method from within their constructors. (Offending class: `".get_class($data[$k])."`. Did you overwrite the default constructor?)");
         }
         return $isCollection ?
-            $this->newCollection($obj) :
-            $obj[0]
+            $this->newCollection($data) :
+            $data[0]
         ;
     }
 
@@ -91,64 +149,14 @@ abstract class AbstractDatasource implements DatasourceInterface {
 
 
     /**
-     * Convert data to JsonApi format
+     * setDebug -- set the debug flag
      *
-     * @param string $type What to put for the `type` parameter
-     * @param array $records The rows of data to convert
-     * @param array $rels An optional list of relationships. Array should be indexed by FIELD NAME, and each item
-     * should be an array whose first value is the `type` of object that the relationship deals with and whose
-     * second value is the `name` of the relationship.
-     * @param string $idField The name of the field that contains the object's ID (Default: 'id')
-     * @return array A collection of resources represented in json api format
+     * @param bool $debug Sets the debug flag to the given value
+     * @return static Returns the object itself.
      */
-
-    protected function convertToJsonApi($type, $records, $rels=[], $idField='id') {
-        if (count($records) == 0) return $records;
-
-        $jsonapi = [];
-        foreach($records as $n => $r) {
-            $jsonapi[$n] = [
-                'type' => $type,
-                'id' => $r[$idField],
-                'attributes' => [],
-            ];
-            if (count($rels) > 0) $jsonapi[$n]['relationships'] = [];
-
-            foreach ($r as $field => $v) {
-                if ($field == $idField) continue;
-                if (array_key_exists($field, $rels)) {
-                    // For to-many relationships
-                    if (is_array($v)) {
-                        $rel = [];
-                        foreach($v as $relId) {
-                            $rel[] = [
-                                "data" => [
-                                    "type" => $rels[$field][0],
-                                    "id" => $relId,
-                                ],
-                            ];
-                        }
-
-                    // For to-one relationships
-                    } else {
-                        if (!$v) $rel = [ "data" => null ];
-                        else $rel = [
-                            "data" => [
-                                "type" => $rels[$field][0],
-                                "id" => $v,
-                            ]
-                        ];
-                    }
-
-                    // Add relationship
-                    $jsonapi[$n]['relationships'][$rels[$field][1]] = $rel;
-                } else {
-                    $jsonapi[$n]['attributes'][$field] = $v;
-                }
-            }
-        }
-
-        return $jsonapi;
+    public function setDebug($debug) {
+        $this->debug = (bool)$debug;
+        return $this;
     }
 }
 

@@ -5,7 +5,7 @@ class PeopleDatasource extends \CFX\Persistence\AbstractDatasource implements \C
     protected $resourceType = 'test-people';
     protected $saveType;
 
-    public function create(array $data=null) {
+    public function create(array $data=null, $type = null) {
         return new Person($this, $data);
     }
     public function newCollection(array $data=[], $passthrough=false) {
@@ -24,6 +24,10 @@ class PeopleDatasource extends \CFX\Persistence\AbstractDatasource implements \C
 
         $q = $this->parseDSL($q);
         return $this->inflateData($data, $q->requestingCollection());
+    }
+    public function getDuplicate(\CFX\JsonApi\ResourceInterface $r)
+    {
+        throw new \CFX\Persistence\ResourceNotFoundException();
     }
     protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
         $this->saveType = 'new';

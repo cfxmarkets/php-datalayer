@@ -55,6 +55,7 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $r = $this->httpClient->getLastRequest();
         $this->assertEquals("POST", $r->getMethod());
         $receivedPerson = $this->people->create(json_decode($r->getBody(), true)['data']);
+        $receivedPerson->setId('1');
         $this->assertEquals(json_encode($person), json_encode($receivedPerson));
 
         $person->setId('1');

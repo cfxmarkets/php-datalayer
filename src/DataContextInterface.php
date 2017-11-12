@@ -5,7 +5,7 @@ interface DataContextInterface {
     /**
      * datasourceForType -- Use the supplied `type` parameter to try to get a datasource in this context
      *
-     * @param string $type The json-api-formatted type parameter (e.g., `site-users`)
+     * @param string $jsonApiType The json-api-formatted type parameter (e.g., `site-users`)
      * @return DatasourceInterface The desired datasource (e.g., `siteUsers`)
      */
     public function datasourceForType($jsonApiType);

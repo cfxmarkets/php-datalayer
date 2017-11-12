@@ -13,7 +13,7 @@ class GenericDatasource extends AbstractDatasource {
     /**
      * {@inheritdoc}
      */
-    public function create(array $data=null) {
+    public function create(array $data=null, $type = null) {
         $fqcn = $this->fqcn;
         return new $fqcn($this, $data);
     }
