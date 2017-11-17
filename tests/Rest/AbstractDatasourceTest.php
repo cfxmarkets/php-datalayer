@@ -65,8 +65,7 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
 
         $r = $this->httpClient->getLastRequest();
         $this->assertEquals("PATCH", $r->getMethod());
-        $receivedPerson = $this->people->create(json_decode($r->getBody(), true)['data']);
-        $this->assertEquals(json_encode($person), json_encode($receivedPerson));
+        $this->assertEquals(json_encode($person), json_encode(json_decode($r->getBody(), true)['data']));
     }
 
     public function testDeleteReceivesEitherResourceOrId() {
@@ -81,6 +80,7 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         // Resource
         $this->setNextResponse();
         $person = $this->people->create(Person::getTestData());
+        $this->setNextResponse();
         $this->people->delete($person);
         $r = $this->httpClient->getLastRequest();
 
