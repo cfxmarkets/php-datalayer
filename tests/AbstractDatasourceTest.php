@@ -68,7 +68,8 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $ds->save($person);
         $this->assertEquals('new', $ds->getSaveType());
 
-        $person = $ds->create(['id' => 8, 'attributes' => ['name' => 'Jim Chavo']]);
+        $person = $ds->get('id=1');
+        $person->setName("James R. Chavo, Jr.");
         $ds->save($person);
         $this->assertEquals('existing', $ds->getSaveType());
     }

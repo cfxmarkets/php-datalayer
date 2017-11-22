@@ -12,9 +12,13 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
     protected $apiKeySecret;
     protected $httpClient;
 
-    public function __construct($baseUri, $apiKey, $apiKeySecret, \GuzzleHttp\ClientInterface $httpClient) {
+    public function __construct($baseUri, $apiKey, $apiKeySecret, \GuzzleHttp\ClientInterface $httpClient = null) {
         if (!static::$apiName) throw new \RuntimeException("Programmer: You must define the \$apiName property for your Client.");
         if (static::$apiVersion === null) throw new \RuntimeException("Programmer: You must define the \$apiVersion property for your Client.");
+
+        if (!$httpClient) {
+            $httpClient = $this->newHttpClient();
+        }
 
         $this->baseUri = $baseUri;
         $this->apiKey = $apiKey;
@@ -86,6 +90,21 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
         } else {
             throw new \RuntimeException("Don't know how to handle 1xx codes.");
         }
+    }
+
+    protected function newHttpClient()
+    {
+        return new \GuzzleHttp\Client([
+            'defaults' => [
+                'config' => [
+                    'curl' => [
+                        CURLOPT_SSL_VERIFYHOST => 0,
+                        CURLOPT_SSL_VERIFYPEER => false,
+                    ],
+                ],
+                'exceptions' => false,
+            ]
+        ]);
     }
 }
 
