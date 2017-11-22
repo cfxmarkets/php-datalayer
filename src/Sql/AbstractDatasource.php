@@ -42,7 +42,11 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         $data = $r->getChanges();
 
         // Initialize inserts
-        $fields = [];
+        $q = [
+            'cols' => [],
+            'expressions' => [],
+            'vals' => [],
+        ];
 
         // Add attributes
         $attrs = array_keys($data['attributes']);
@@ -51,7 +55,9 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
             if (!$column) {
                 continue;
             }
-            $fields[$column] = $this->getParamValue($attrs[$i], $data, $r);
+            $q['cols'][] = $column;
+            $q['expressions'][] = '?';
+            $q['vals'][] = $this->getParamValue($attrs[$i], $data, $r);
         }
 
         // Add relationships
@@ -62,20 +68,27 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
                 if (!$column) {
                     continue;
                 }
-
-                $fields[$column] = $this->getParamValue($rels[$i], $data, $r);
+                $q['cols'][] = $column;
+                $q['expressions'][] = '?';
+                $q['vals'][] = $this->getParamValue($rels[$i], $data, $r);
             }
         }
 
         // If there are no changes, just return
-        if (count($fields) === 0) {
+        if (count($q['cols']) === 0) {
             return $this;
         }
 
+        $q = $this->adjustFinalQueryParams($q);
+        $set = [];
+        foreach($q['cols'] as $i => $column) {
+            $set[] = "`$column` = ".$q['expressions'][$i];
+        }
+
         $q = $this->newSqlQuery([
-            'query' => "UPDATE {$this->getAddress()} SET `".implode("` = ?, `", array_keys($fields))."` = ?",
+            'query' => "UPDATE {$this->getAddress()} SET ".implode(", ", $set),
             'where' => "`{$this->getPrimaryKeyName()}` = ?",
-            'params' => array_merge(array_values($fields), [$r->getId()]),
+            'params' => array_merge($q['vals'], [$r->getId()]),
         ]);
 
         $this->executeQuery($q);
@@ -97,15 +110,17 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         $data = $r->jsonSerialize();
 
         // Initialize inserts
-        $columns = [];
-        $placeholders = [];
-        $vals = [];
+        $q = [
+            'cols' => [],
+            'expressions' => [],
+            'vals' => [],
+        ];
 
         // Add ID, if applicable
         if ($this->generatePrimaryKey) {
-            $columns[] = $this->getPrimaryKeyName();
-            $placeholders[] = '?';
-            $vals[] = $r->getId();
+            $q['cols'][] = $this->getPrimaryKeyName();
+            $q['expressions'][] = '?';
+            $q['vals'][] = $r->getId();
         }
 
         // Add attributes
@@ -115,9 +130,9 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
             if (!$column) {
                 continue;
             }
-            $columns[] = $column;
-            $placeholders[] = '?';
-            $vals[] = $this->getParamValue($attrs[$i], $data, $r);
+            $q['cols'][] = $column;
+            $q['expressions'][] = '?';
+            $q['vals'][] = $this->getParamValue($attrs[$i], $data, $r);
         }
 
         // Add relationships
@@ -129,20 +144,38 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
                     continue;
                 }
 
-                $columns[] = $column;
-                $placeholders[] = '?';
-                $vals[] = $this->getParamValue($rels[$i], $data, $r);
+                $q['cols'][] = $column;
+                $q['expressions'][] = '?';
+                $q['vals'][] = $this->getParamValue($rels[$i], $data, $r);
             }
         }
 
+        $q = $this->adjustFinalQueryParams($q);
+
         $q = $this->newSqlQuery([
-            "query" => "INSERT INTO {$this->getAddress()} (`".implode('`, `', $columns)."`) VALUES (".implode(", ", $placeholders).")",
-            "params" => $vals
+            "query" => "INSERT INTO {$this->getAddress()} (`".implode('`, `', $q['cols'])."`) VALUES (".implode(", ", $q['expressions']).")",
+            "params" => $q['vals']
         ]);
 
         $this->lastInsertId = $this->executeQuery($q);
 
         return $this;
+    }
+
+    /**
+     * A before-query hook for save queries
+     *
+     * This hook allows programmers to adjust final query parameters before insert or update, effectively allowing them to arbitrarily
+     * add to, subtract from, or completely rewrite queries before they're actually run.
+     *
+     * @param string[][] $params An array containing the columns, placeholders ("expressions"), and values of the query. This array should have
+     * EXACTLY the keys `cols`, `expressions`, and `vals`, which should each be a regular, integer-indexed array of string values. Furthermore,
+     * `expressions` may contain one or more question marks marking placeholders for values.
+     * @return string[][] Should return an array of the same format that was received
+     */
+    protected function adjustFinalQueryParams(array $params)
+    {
+        return $params;
     }
 
     /**
