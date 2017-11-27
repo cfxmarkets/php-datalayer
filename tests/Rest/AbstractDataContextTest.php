@@ -125,5 +125,41 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
         $r = $cfx->sendRequest('GET', '/assets');
         $this->assertEquals(200, $r->getStatusCode());
     }
+
+    public function testDebugLogsWorkCorrectly()
+    {
+        $httpClient = new HttpClient();
+        $cfx = new RestDataContext('https://null.cfxtrading.com', '12345', 'abcde', $httpClient);
+
+        try {
+            $cfx->debugGetRequestLog();
+            $this->fail("Should have thrown exception");
+        } catch (\RuntimeException $e) {
+            $this->assertContains("enable debugging", $e->getMessage());
+        }
+
+        try {
+            $cfx->debugGetResponseLog();
+            $this->fail("Should have thrown exception");
+        } catch (\RuntimeException $e) {
+            $this->assertContains("enable debugging", $e->getMessage());
+        }
+
+        $cfx->setDebug(true);
+
+        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(200));
+        $cfx->sendRequest('GET', '/assets');
+        $this->assertTrue(is_array($cfx->debugGetRequestLog()), "Should have returned an array with requests in it");
+        $this->assertTrue(is_array($cfx->debugGetResponseLog()), "Should have returned an array with responses in it");
+        $this->assertEquals(1, count($cfx->debugGetRequestLog()));
+        $this->assertEquals(1, count($cfx->debugGetResponseLog()));
+        $this->assertInstanceOf("\\GuzzleHttp\\Message\\RequestInterface", $cfx->debugGetRequestLog()[0]);
+        $this->assertInstanceOf("\\GuzzleHttp\\Message\\ResponseInterface", $cfx->debugGetResponseLog()[0]);
+
+        $cfx->debugClearRequestLog();
+        $cfx->debugClearResponseLog();
+        $this->assertEquals(0, count($cfx->debugGetRequestLog()));
+        $this->assertEquals(0, count($cfx->debugGetResponseLog()));
+    }
 }
 

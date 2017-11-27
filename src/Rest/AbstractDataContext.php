@@ -12,6 +12,17 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
     protected $apiKeySecret;
     protected $httpClient;
 
+    /**
+     * @var \GuzzleHttp\Message\RequestInterface[] An array that collects the requests this object is making for debugging purposes
+     */
+    protected $debugRequestLog = [];
+
+    /**
+     * @var \GuzzleHttp\Message\ResponseInterface[] An array that collects the responses this object receives for debugging purposes
+     */
+    protected $debugResponseLog = [];
+
+
     public function __construct($baseUri, $apiKey, $apiKeySecret, \GuzzleHttp\ClientInterface $httpClient = null) {
         if (!static::$apiName) throw new \RuntimeException("Programmer: You must define the \$apiName property for your Client.");
         if (static::$apiVersion === null) throw new \RuntimeException("Programmer: You must define the \$apiVersion property for your Client.");
@@ -67,8 +78,15 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
 
         if (!$authz_header) $params['headers']['Authorization'] = "Basic ".base64_encode("{$this->getApiKey()}:{$this->getApiKeySecret()}");
 
-        $r = $this->httpClient->createRequest($method, $uri, $params);
-        return $this->processResponse($this->httpClient->send($r));
+        $request = $this->httpClient->createRequest($method, $uri, $params);
+        $response = $this->processResponse($this->httpClient->send($request));
+
+        if ($this->debug) {
+            $this->debugRequestLog[] = $request;
+            $this->debugResponseLog[] = $response;
+        }
+
+        return $response;
     }
 
     protected function composeUri($endpoint) {
@@ -105,6 +123,48 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
                 'exceptions' => false,
             ]
         ]);
+    }
+
+    /**
+     * For debugging, get an array of all Resposnes this object has received since the last time the log was cleared
+     *
+     * @return \GuzzleHttp\Message\ResponseInterface[] An array of all responses that this object has received
+     */
+    public function debugGetResponseLog()
+    {
+        if (!$this->debug) {
+            throw new \RuntimeException("In order to get the Response Log, you must enable debugging by using `setDebug`");
+        }
+        return $this->debugResponseLog;
+    }
+
+    /**
+     * For debugging, clear the response log, so you can see all responses returned in a defined piece of code
+     */
+    public function debugClearResponseLog()
+    {
+        $this->debugResponseLog = [];
+    }
+
+    /**
+     * For debugging, get an array of all Requests this object has made since the last time the log was cleared
+     *
+     * @return \GuzzleHttp\Message\RequestInterface[] An array of all requests that this object has generated
+     */
+    public function debugGetRequestLog()
+    {
+        if (!$this->debug) {
+            throw new \RuntimeException("In order to get the Request Log, you must enable debugging by using `setDebug`");
+        }
+        return $this->debugRequestLog;
+    }
+
+    /**
+     * For debugging, clear the response log, so you can see all requests returned in a defined piece of code
+     */
+    public function debugClearRequestLog()
+    {
+        $this->debugRequestLog = [];
     }
 }
 
