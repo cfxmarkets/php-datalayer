@@ -161,5 +161,44 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
         $this->assertEquals(0, count($cfx->debugGetRequestLog()));
         $this->assertEquals(0, count($cfx->debugGetResponseLog()));
     }
+
+    public function testDuplicateResourceException()
+    {
+        $httpClient = new HttpClient();
+        $cfx = new RestDataContext('https://null.cfxtrading.com', '12345', 'abcde', $httpClient);
+
+        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(
+            409,
+            [],
+            \GuzzleHttp\Stream\Stream::factory(json_encode([
+                'errors' => [
+                    [
+                        'status' => 409,
+                        'title' => "Duplicate Resource",
+                        'detail' => "You have tried to create a duplicate resource",
+                        "meta" => [
+                            "duplicateResource" => [
+                                'type' => 'test-people',
+                                'id' => '12345abcde',
+                            ],
+                        ],
+                    ],
+                ],
+            ])))
+        );
+
+        try {
+            $user = $cfx->testPeople->create()
+                ->setName("Test Testerson")
+                ->save();
+
+            $this->fail("Should have thrown exception");
+        } catch (\CFX\Persistence\DuplicateResourceException $e) {
+            $user = $e->getDuplicateResource();
+            $this->assertInstanceOf("\\CFX\\Persistence\\Test\\Person", $user);
+            $this->assertEquals("test-people", $user->getResourceType());
+            $this->assertEquals("12345abcde", $user->getId());
+        }
+    }
 }
 

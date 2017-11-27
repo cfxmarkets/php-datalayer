@@ -18,6 +18,7 @@ class Person extends \CFX\JsonApi\AbstractResource {
         } else {
             $this->clearError('name', 'bad');
         }
+        return $this;
     }
 
     public static function getTestData() {
