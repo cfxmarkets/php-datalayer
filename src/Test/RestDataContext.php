@@ -21,5 +21,12 @@ class RestDataContext extends \CFX\Persistence\Rest\AbstractDataContext {
     public function getComposedUri($endpoint) {
         return $this->composeUri($endpoint);
     }
+
+    public function instantiateDatasource($name)
+    {
+        if ($name === 'testPeople') {
+            return new RestPeopleDatasource($this);
+        }
+    }
 }
 
