@@ -16,8 +16,43 @@ abstract class AbstractDatasource implements DatasourceInterface {
         $this->context = $context;
     }
 
+    /**
+     * A method for getting mappings between types of objects and the classes that implement them.
+     *
+     * This method is used by the native `convert` and `create` methods. The minimum expected mappings are
+     * `public` and `private`, and these will usually look something like this:
+     *
+     *     [
+     *         'public' => "\\CFX\\Brokerage\\User",
+     *         'private' => "\\CFX\\Brokerage\\UserPrivate",
+     *     ]
+     *
+     * @return array The mapping of type names to fully-qualified class names
+     */
+    abstract public function getClassMap();
+
+    public function create(array $data=null, $type = null) {
+        if (!$type) {
+            $type = 'private';
+        }
+
+        $class = $this->getClassMap();
+        if (array_key_exists($type, $class)) {
+            $class = $class[$type];
+            return new $class($this, $data);
+        } else {
+            throw new \RuntimeException("Programmer: Don't know how to handle classes of type `$type` for `".get_class($this)."` datasources.");
+        }
+    }
+
     public function convert(\CFX\JsonApi\ResourceInterface $src, $convertTo) {
-        throw new \RuntimeException("Programmer: Don't know how to convert resources to type `$convertTo`.");
+        $class = $this->getClassMap();
+        if (array_key_exists($convertTo, $class)) {
+            $class = $class[$convertTo];
+            return $class::fromResource($src);
+        } else {
+            throw new \RuntimeException("Programmer: Don't know how to convert resources to type `$convertTo` for `".get_class($this)."` datasources.");
+        }
     }
 
     public function newCollection(array $data=null) {
