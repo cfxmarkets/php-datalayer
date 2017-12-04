@@ -17,10 +17,10 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $ds = new Test\PeopleDatasource($context);
         $person = new Test\Person($ds, ['attributes' => [ 'name' => 'Jim Chavo' ]]);
         try {
-            $ds->convert($person, 'private');
+            $ds->convert($person, 'nonconverting');
             $this->fail("Should have thrown an exception");
         } catch (\RuntimeException $e) {
-            $this->assertContains("Programmer: Don't know how to convert resources to type `private`.", $e->getMessage());
+            $this->assertContains("Programmer: Don't know how to convert resources to type `nonconverting`", $e->getMessage());
         }
     }
 
