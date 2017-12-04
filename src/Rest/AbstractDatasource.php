@@ -4,7 +4,7 @@ namespace CFX\Persistence\Rest;
 abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements DatasourceInterface {
     public function get($q=null) {
         $endpoint = "/".$this->getResourceType();
-        if (preg_match("/^id ?= ?([a-zA-Z0-9:|_-])+$/", trim($q), $matches)) {
+        if (preg_match("/^id ?= ?([a-zA-Z0-9:|_-]+)$/", trim($q), $matches)) {
             $endpoint .= "/".$matches[1];
             $q = null;
         }
