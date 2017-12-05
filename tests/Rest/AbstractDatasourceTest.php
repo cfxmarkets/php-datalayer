@@ -38,6 +38,7 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $this->setNextResponse(['data' => [ Person::getTestData() ]]);
         $people = $this->people->get();
         $this->assertInstanceOf("\\CFX\\JsonApi\\ResourceCollectionInterface", $people);
+        $this->assertInstanceOf("\\CFX\\Persistence\\Test\\Person", $people[0]);
 
         $this->setNextResponse(['data' => Person::getTestData() ]);
         $person = $this->people->get('id=1');
@@ -78,8 +79,11 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $this->assertEquals('https://null.cfxtrading.com/tester/v1.0.0/test-people/1', (string)$r->getUrl());
 
         // Resource
-        $this->setNextResponse();
-        $person = $this->people->create(Person::getTestData());
+        $data = Person::getTestData();
+        $id = $data['id'];
+        unset($data['id']);
+        $person = $this->people->create($data)->setId($id);
+
         $this->setNextResponse();
         $this->people->delete($person);
         $r = $this->httpClient->getLastRequest();

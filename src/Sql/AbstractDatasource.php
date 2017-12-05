@@ -14,6 +14,18 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     protected $generatePrimaryKey = true;
     protected $lastInsertId;
 
+    /**
+     * A method for returning a specification that can help when translating between JSON-API format and the underlying
+     * storage mechanism.
+     *
+     * At the time of this writing, the intended purpose of this is to define the relationships of an object such that they
+     * may be easily converted from raw data to jsonapi format. (This will likely eventually replace `$fieldMap` as a way
+     * of mapping fields to database columns as well).
+     *
+     * @return array An arbitrary array 
+     */
+    abstract public function getObjectSpec();
+
     public function delete($r) {
         if (!is_string($r) && !is_int($r) && (!is_object($r) || !($r instanceof \CFX\JsonApi\ResourceInterface))) {
             $type = gettype($r);
@@ -292,22 +304,36 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     /**
      * Convert data to JsonApi format
      *
-     * @param string $type What to put for the `type` parameter
      * @param array $records The rows of data to convert
-     * @param array $rels An optional list of relationships. Array should be indexed by FIELD NAME, and each item
-     * should be an array whose first value is the `type` of object that the relationship deals with and whose
-     * second value is the `name` of the relationship.
-     * @param string $idField The name of the field that contains the object's ID (Default: 'id')
      * @return array A collection of resources represented in json api format
      */
 
-    protected function convertToJsonApi($type, $records, $rels=[], $idField='id') {
-        if (count($records) == 0) return $records;
+    protected function convertToJsonApi($records) {
+        if (count($records) == 0) {
+            return $records;
+        }
+
+        $spec = $this->getObjectSpec();
+        if (array_key_exists('primaryKey', $spec)) {
+            $idField = $spec['primaryKey'];
+        } else {
+            $idField = 'id';
+        }
+
+        $rels = [];
+        if (array_key_exists('relationships', $spec)) {
+            foreach($spec['relationships'] as $field => $info) {
+                if (!$info) {
+                    continue;
+                }
+                $rels[$info[0]] = [ $info[1], $field ];
+            }
+        }
 
         $jsonapi = [];
         foreach($records as $n => $r) {
             $jsonapi[$n] = [
-                'type' => $type,
+                'type' => $this->getResourceType(),
                 'id' => $r[$idField],
                 'attributes' => [],
             ];

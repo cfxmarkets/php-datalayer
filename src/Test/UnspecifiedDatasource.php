@@ -2,6 +2,11 @@
 namespace CFX\Persistence\Test;
 
 class UnspecifiedDatasource extends \CFX\Persistence\AbstractDatasource {
+    public function getClassMap()
+    {
+        return [];
+    }
+
     public function create(array $data=null, $type = null) {
     }
 

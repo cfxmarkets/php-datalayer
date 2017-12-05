@@ -5,9 +5,15 @@ class RestPeopleDatasource extends \CFX\Persistence\Rest\AbstractDatasource {
     protected $resourceType = 'test-people';
     protected $requestWasDelegated = false;
 
-    public function create(array $data=null, $type = null) {
-        return new Person($this, $data);
+    public function getClassMap()
+    {
+        return [
+            'public' => "\\CFX\\Persistence\\Test\Person",
+            'private' => "\\CFX\\Persistence\\Test\Person",
+        ];
     }
+
+
     public function newCollection(array $data=[], $passthrough=false) {
         return new PeopleCollection($data);
     }

@@ -4,8 +4,14 @@ namespace CFX\Persistence\Rest;
 abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements DatasourceInterface {
     public function get($q=null) {
         $endpoint = "/".$this->getResourceType();
-        $q = $this->parseDSL($q);
-        if (!$q->requestingCollection()) $endpoint .= "/".$q->getId();
+        if (preg_match("/^id ?= ?([a-zA-Z0-9:|_-]+)$/", trim($q), $matches)) {
+            $endpoint .= "/".$matches[1];
+            $q = null;
+        }
+
+        if ($q) {
+            $endpoint .= "?q=".urlencode($q);
+        }
 
         $r = $this->sendRequest('GET', $endpoint);
         $obj = json_decode($r->getBody(), true);
@@ -14,9 +20,20 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         }
         $obj = $obj['data'];
 
-        // Convert to "table of rows" format for inflate
-        if (!$q->requestingCollection()) $obj = [$obj];
-        $obj = $this->inflateData($obj, $q->requestingCollection());
+        // The rest API will either return a single resource or an array of resources. Use that fact to
+        // determine how to proceed
+        if ($obj === null) {
+            throw new \CFX\Persistence\ResourceNotFoundException("The REST API returned null for the requested query.");
+        }
+
+        $collection = !array_key_exists('type', $obj);
+
+        // Turn the result into the "collection of rows" that the inflate function is expecting, if necessary
+        if (!$collection) {
+            $obj = [ $obj ];
+        }
+
+        $obj = $this->inflateData($obj, $collection);
 
         return $obj;
     }

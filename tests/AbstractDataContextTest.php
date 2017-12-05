@@ -53,7 +53,7 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $context->convertResource($person, 'fantastic');
             $this->fail("Should have thrown an exception");
         } catch (\RuntimeException $e) {
-            $this->assertContains("Programmer: Don't know how to convert resources to type `fantastic`.", $e->getMessage());
+            $this->assertContains("Programmer: Don't know how to convert resources to type `fantastic`", $e->getMessage());
         }
     }
 
