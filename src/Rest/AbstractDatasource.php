@@ -44,19 +44,24 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     }
 
     protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
-        return $this->_saveRest('POST', "/".$this->getResourceType(), $r);
+        return $this->_saveRest('POST', "/".$this->getResourceType(), $r, false);
     }
 
     protected function saveExisting(\CFX\JsonApi\ResourceInterface $r) {
-        return $this->_saveRest('PATCH', "/".$this->getResourceType()."/{$r->getId()}", $r);
+        return $this->_saveRest('PATCH', "/".$this->getResourceType()."/{$r->getId()}", $r, true);
     }
 
     /**
      * Convenience method for handling saveNew and saveExisting method calls, which are virtually
      * the same in REST with the exception of method and endpoint
      */
-    protected function _saveRest($method, $endpoint, \CFX\JsonApi\ResourceInterface $r) {
-        $response = $this->sendRequest($method, $endpoint, [ 'json' => [ 'data' => $r ] ]);
+    protected function _saveRest($method, $endpoint, \CFX\JsonApi\ResourceInterface $r, $justChanges = false) {
+        if ($justChanges) {
+            $data = $r->getChanges();
+        } else {
+            $data = $r;
+        }
+        $response = $this->sendRequest($method, $endpoint, [ 'json' => [ 'data' => $data ] ]);
 
         // Use returned data to update resource
         $data = json_decode($response->getBody(), true)['data'];
