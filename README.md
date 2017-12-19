@@ -165,3 +165,8 @@ Here are a few known issues that we still have to address:
 * Implementing more complex and powerful DSL query parsing
 * Narrowing the role of DataContexts (currently, they handle the actual querying for datasources, which doesn't actually make much sense)
 
+
+## Note About API Documentation
+
+We're hoping to launch a site (https://developers.cfxtrading.com) soon that will allow us to provide more comprehensive API documentation and other resources for developers. While this site is not live yet, you can still generate good API documentation for this library by cloning the library, installing [Sami](https://github.com/FriendsOfPHP/Sami), and running `sami.phar update sami.config.php`.
+
