@@ -8,6 +8,8 @@ class GenericDSLQuery implements DSLQueryInterface {
 
     /*
 
+        Ideas for future implementation:
+
         string = "(name like 'kael%' or email like 'kael%') and dob > 20000101 and dob < 20051231 and bestFriend in ('12345', '67890', '56473')"
 
         Query(
@@ -50,9 +52,10 @@ class GenericDSLQuery implements DSLQueryInterface {
 
     */
 
-    protected function __construct() {
-    }
 
+    /**
+     * @inheritdoc
+     */
     public static function parse($q) {
         $query = new static();
         if (!$q) return $query;
@@ -92,19 +95,31 @@ class GenericDSLQuery implements DSLQueryInterface {
         return $query;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getId() {
         return $this->getExpressionValue('id');
     }
 
+    /**
+     * @inheritdoc
+     */
     public function setId($operator, $id) {
-        $this->setExpressionValue('id', [
-            'field' => $this->primaryKey,
-            'operator' => $operator,
-            'value' => $id
-        ]);
-        return $this;
+        return $this->setExpressionValue('id', [ 'field' => $this->primaryKey, 'operator' => $operator, 'value' => $id ]);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function unsetId()
+    {
+        return $this->setExpressionValue('id', null);
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function getWhere() {
         $str = [];
         foreach($this->expressions as $name => $expr) {
@@ -135,6 +150,9 @@ class GenericDSLQuery implements DSLQueryInterface {
         return implode(" $this->operator ", $str);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getParams() {
         $params = [];
 
@@ -153,10 +171,16 @@ class GenericDSLQuery implements DSLQueryInterface {
         return $params;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function requestingCollection() {
         return !$this->includes('id');
     }
 
+    /**
+     * @inheritdoc
+     */
     public function setOperator($str) {
         if (!in_array($str, $this->getLogicalOperators())) {
             throw new BadQueryException("Sorry, `$str` is not an acceptable operator. Acceptable operators for this query are `".implode('`, `', $this->getLogicalOperators())."`.");
@@ -164,6 +188,47 @@ class GenericDSLQuery implements DSLQueryInterface {
         $this->operator = $str;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function includes($name) {
+        return
+            array_key_exists($name, $this->expressions) &&
+            $this->expressions[$name]['operator'] == '='
+        ;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function __toString() {
+        $str = [];
+        foreach($this->expressions as $name => $expr) {
+            if ($expr instanceof DSLQueryInterface) {
+                $str[] = "(".$expr.")";
+            } else {
+                $str[] = "$name$expr[operator]$expr[value]";
+            }
+        }
+
+        return implode(" $this->operator ", $str);
+    }
+
+
+
+
+
+    /**
+     * A method for setting expression values
+     *
+     * @param string $name An arbitrary name for the expression (e.g., "id", "creator", "entity", etc.)
+     * @param array $val An array of expression parameters, including the following:
+     *      * string 'field' The actual field name (e.g., "id", "creatorId", "legalEntityId", etc.)
+     *      * string $operator The operator of the expression (e.g., "=", "!=")
+     *      * string $value The value part of the expression (e.g., 'abc123')
+     * @return static
+     * @throws \CFX\Persistence\BadQueryException on bad parameters
+     */
     protected function setExpressionValue($name, $val) {
         if ($val instanceof DSLQueryInterface) {
             $this->expressions[$name] = $val;
@@ -198,19 +263,13 @@ class GenericDSLQuery implements DSLQueryInterface {
         return $this;
     }
 
-    public function __toString() {
-        $str = [];
-        foreach($this->expressions as $name => $expr) {
-            if ($expr instanceof DSLQueryInterface) {
-                $str[] = "(".$expr.")";
-            } else {
-                $str[] = "$name$expr[operator]$expr[value]";
-            }
-        }
-
-        return implode(" $this->operator ", $str);
-    }
-
+    /**
+     * Get the value of the given expression (will either be null or an array containing at minimum the
+     * fields defined in `setExpressionValue`
+     *
+     * @param string $name The name of the expression to get
+     * @return array|null
+     */
     protected function getExpressionValue($name) {
         if (array_key_exists($name, $this->expressions)) {
             return $this->expressions[$name]['value'];
@@ -220,28 +279,44 @@ class GenericDSLQuery implements DSLQueryInterface {
     }
 
     /**
-     * Should return true if the named field is among the expressions AND the operator
-     * for the field is '='
+     * Return all valid field names for this DSL
+     * 
+     * @return string[]
      */
-    public function includes($name) {
-        return
-            array_key_exists($name, $this->expressions) &&
-            $this->expressions[$name]['operator'] == '='
-        ;
-    }
-
     protected static function getAcceptableFields() {
         return [ 'id' ];
     }
 
+    /**
+     * Return all valid logical operators for this DSL
+     *
+     * Used to validate values for `setOperator`
+     *
+     * @return string[]
+     */
     protected static function getLogicalOperators() {
         return [ 'and', 'or' ];
     }
 
+    /**
+     * Return all valid comparison operators for this DSL
+     *
+     * Used to validate values for the `operator` field in an expression value array
+     *
+     * @return string[]
+     */
     protected static function getComparisonOperators() {
         return ['=', '!=', 'like', '>', '<', '>=', '<='];
     }
 
+    /**
+     * Return a regex that defines a valid field value specification
+     *
+     * Note: This method is currently very primordial. It should eventually be expanded to provide a map
+     * of field names to value specifications.
+     *
+     * @return string (regexp capture expression)
+     */
     protected static function getFieldValueSpecification() {
         return "([^ &'\"]+)";
     }

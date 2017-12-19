@@ -2,6 +2,9 @@
 namespace CFX\Persistence\Rest;
 
 abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource implements DatasourceInterface {
+    /**
+     * @inheritdoc
+     */
     public function get($q=null) {
         $endpoint = "/".$this->getResourceType();
         if (preg_match("/^id ?= ?([a-zA-Z0-9:|_-]+)$/", trim($q), $matches)) {
@@ -38,15 +41,24 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         return $obj;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getDuplicate(\CFX\JsonApi\ResourceInterface $r)
     {
         throw new \CFX\Persistence\ResourceNotFoundException("Not searching for duplicate resource.");
     }
 
+    /**
+     * @inheritdoc
+     */
     protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
         return $this->_saveRest('POST', "/".$this->getResourceType(), $r, false);
     }
 
+    /**
+     * @inheritdoc
+     */
     protected function saveExisting(\CFX\JsonApi\ResourceInterface $r) {
         return $this->_saveRest('PATCH', "/".$this->getResourceType()."/{$r->getId()}", $r, true);
     }
@@ -54,6 +66,11 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     /**
      * Convenience method for handling saveNew and saveExisting method calls, which are virtually
      * the same in REST with the exception of method and endpoint
+     *
+     * @param string $method The HTTP method to use for the request
+     * @param string $endpoint The endpoint to which to direct the request
+     * @param \CFX\JsonApi\ResourceInterface $r The resource to save
+     * @param bool $justChanges Whether to send the whole object or just the changes
      */
     protected function _saveRest($method, $endpoint, \CFX\JsonApi\ResourceInterface $r, $justChanges = false) {
         if ($justChanges) {
@@ -74,6 +91,9 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         return $this;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function delete($r) {
         if ($r instanceof \CFX\JsonApi\ResourceInterface) $r = $r->getId();
         $this->sendRequest('DELETE', "/".$this->getResourceType()."/$r");
@@ -84,11 +104,18 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
      * This method exists to allow datasources to set default parameters for their requests.
      * For example, certain datasources may always use an OAuth token for authorization,
      * and that can be set here before the request is sent to the context for processing.
+     *
+     * @see \CFX\Persistence\Rest\DataContextInterface::sendRequest
      */
     protected function sendRequest($method, $endpoint, array $params=[]) {
         return $this->context->sendRequest($method, $endpoint, $params);
     }
 
+    /**
+     * Overridden because this functionality is not necessary in the context of a default API client
+     *
+     * @inheritdoc
+     */
     public function convert(\CFX\JsonApi\ResourceInterface $src, $convertTo) {
         return $src;
     }
