@@ -35,5 +35,16 @@ interface DataContextInterface {
      * @see DatasourceInterface::convert
      */
     public function convertResource(\CFX\JsonApi\ResourceInterface $src, $conversionType);
+
+
+    /**
+     * setDebug -- set the debug flag
+     *
+     * This flag is to be passed on to child datasources via their own `setDebug` methods
+     *
+     * @param bool $debug Sets the debug flag to the given value
+     * @return static
+     */
+    public function setDebug($debug);
 }
 

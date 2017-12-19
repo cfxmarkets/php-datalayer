@@ -17,6 +17,11 @@ abstract class AbstractDataContext implements DataContextInterface {
 
     /**
      * Convenience method for turning datasource "getter" methods into read-only properties
+     *
+     * @param string $name a camelCase datasource name
+     * @return \CFX\JsonApi\DatasourceInterface
+     * 
+     * @throws \CFX\Persistence\UnknownDatasourceException
      */
     public function __get($name) {
         return $this->getNamedDatasource($name)
@@ -24,7 +29,7 @@ abstract class AbstractDataContext implements DataContextInterface {
     }
 
     /**
-     * @see DataContextInterface::datasourceForType
+     * @inheritdoc
      */
     public function datasourceForType($jsonApiType) {
         // Convert from dash-case to camelCase
@@ -38,7 +43,7 @@ abstract class AbstractDataContext implements DataContextInterface {
     }
 
     /**
-     * @see DataContextInterface::newResource
+     * @inheritdoc
      */
     public function newResource($data=null, $type=null, $validAttrs=null, $validRels=null) {
         try {
@@ -49,7 +54,7 @@ abstract class AbstractDataContext implements DataContextInterface {
     }
 
     /**
-     * @see DataContextInterface::convertResource
+     * @inheritdoc
      */
     public function convertResource(\CFX\JsonApi\ResourceInterface $src, $conversionType) {
         try {
@@ -66,8 +71,13 @@ abstract class AbstractDataContext implements DataContextInterface {
     /**
      * getNamedDatasource -- internal method for getting a datasource by name
      *
-     * This method is meant to be the back-end for several different front-end methods of getting a datasource (hence
-     * its protected visibility)
+     * This method is meant to be the back-end (hence its protected visibility) for several different front-end
+     * methods of getting a datasource, like the `__get` magic function and `datasourceForType`.
+     *
+     * @param string $name The camelCase name of a datasource to retrieve
+     * @return \CFX\JsonApi\DatasourceInterface
+     * 
+     * @throws \CFX\Persistence\UnknownDatasourceException
      */
     protected function getNamedDatasource($name) {
         if (!array_key_exists($name, $this->datasources)) $this->datasources[$name] = $this->instantiateDatasource($name);
@@ -77,12 +87,13 @@ abstract class AbstractDataContext implements DataContextInterface {
     /**
      * Instantiate a datasource with the given `$name`
      *
-     * This is a factory method for instantiating datasources of various types. It can be overridden in child contexts to
+     * This is a factory method for instantiating datasources of various types. It should be overridden in child contexts to
      * provide arbitrary datasources
      *
-     * @param string $name The name of the datasource you want to instantiate
-     * @return DatasourceInterface The instantiated datasource
-     * @throws UnknownDatasourceException
+     * @param string $name The camelCase name of the datasource you want to instantiate
+     * @return \CFX\JsonApi\DatasourceInterface
+     *
+     * @throws \CFX\Persistence\UnknownDatasourceException
      */
     protected function instantiateDatasource($name) {
         throw new UnknownDatasourceException("Programmer: Don't know how to handle datasources of type `$name`. If you'd like to handle this, you should either add this datasource to the `instantiateDatasource` method in this class or create a derivative class to which to add it.");
@@ -92,17 +103,14 @@ abstract class AbstractDataContext implements DataContextInterface {
 
 
     /**
-     * setDebug -- set the debug flag
-     *
-     * @param bool $debug Sets the debug flag to the given value
-     * @return static Returns the object itself.
+     * @inheritdoc
      */
     public function setDebug($debug)
     {
         $this->debug = (bool)$debug;
 
         foreach($this->datasources as $d) {
-            $d->debug($this->debug);
+            $d->setDebug($this->debug);
         }
 
         return $this;

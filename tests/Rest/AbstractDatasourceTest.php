@@ -66,7 +66,21 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
 
         $r = $this->httpClient->getLastRequest();
         $this->assertEquals("PATCH", $r->getMethod());
-        $this->assertEquals(json_encode($person), json_encode(json_decode($r->getBody(), true)['data']));
+
+        $expected = json_decode(json_encode($person), true);
+        $actual = json_decode($r->getBody(), true)['data'];
+        $test = function($expected, $actual) use (&$test) {
+            if (is_array($expected)) {
+                $this->assertTrue(is_array($actual), "Expected array, but got a value instead");
+                $this->assertEquals(array_keys($expected), array_keys($actual), "Keys should be the same", 0, 20, true);
+                foreach($expected as $key => $val) {
+                    $test($val, $actual[$key]);
+                }
+            } else {
+                $this->assertEquals($expected, $actual);
+            }
+        };
+        $test($expected, $actual);
     }
 
     public function testDeleteReceivesEitherResourceOrId() {

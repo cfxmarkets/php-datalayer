@@ -2,8 +2,20 @@
 namespace CFX\Persistence;
 
 abstract class AbstractDatasource implements DatasourceInterface {
+    /**
+     * @var string The json api resource type that this datasource deals in
+     */
     protected $resourceType;
+
+    /**
+     * @var \CFX\Persistence\DataContextInterface The data context in which this datasource resides
+     */
     protected $context;
+
+    /**
+     * @var array A JSON API-format array representing data that is prepared for a resource object to extract
+     * on initialization.
+     */
     protected $currentData;
 
     /**
@@ -11,6 +23,15 @@ abstract class AbstractDatasource implements DatasourceInterface {
      */
     protected $debug = false;
 
+
+
+
+    /**
+     * Construct a datasource
+     *
+     * @param \CFX\Persistence\DataContextInterface $context The data context in which this datasource resides
+     * @return static
+     */
     public function __construct(DataContextInterface $context) {
         if ($this->getResourceType() === null) throw new \RuntimeException("Programmer: You need to define this subclient's `\$resourceType` attribute. This should match the type of resources that this client deals in.");
         $this->context = $context;
@@ -31,6 +52,10 @@ abstract class AbstractDatasource implements DatasourceInterface {
      */
     abstract public function getClassMap();
 
+
+    /**
+     * @inheritdoc
+     */
     public function create(array $data=null, $type = null) {
         if (!$type) {
             $type = 'private';
@@ -45,6 +70,10 @@ abstract class AbstractDatasource implements DatasourceInterface {
         }
     }
 
+
+    /**
+     * @inheritdoc
+     */
     public function convert(\CFX\JsonApi\ResourceInterface $src, $convertTo) {
         $class = $this->getClassMap();
         if (array_key_exists($convertTo, $class)) {
@@ -55,16 +84,26 @@ abstract class AbstractDatasource implements DatasourceInterface {
         }
     }
 
+
+    /**
+     * @inheritdoc
+     */
     public function newCollection(array $data=null) {
         return new \CFX\JsonApi\ResourceCollection($data);
     }
 
+
+    /**
+     * @inheritdoc
+     */
     public function getResourceType() {
         return $this->resourceType;
     }
 
+
+
     /**
-     * @see DatasourceInterface::getCurrentData
+     * @inheritdoc
      */
     public function getCurrentData() {
         $data = $this->currentData;
@@ -72,6 +111,10 @@ abstract class AbstractDatasource implements DatasourceInterface {
         return $data;
     }
 
+
+    /**
+     * @inheritdoc
+     */
     public function save(\CFX\JsonApi\ResourceInterface $r) {
         // If we're trying to save with errors, throw exception
         if ($r->hasErrors()) {
@@ -146,17 +189,48 @@ abstract class AbstractDatasource implements DatasourceInterface {
         return $this;
     }
 
+    /**
+     * Find any resources in the database that match the provided resource
+     *
+     * This method is usually used to ensure uniqueness
+     *
+     * @param \CFX\JsonApi\ResourceInterface $r The resource to verify
+     * @return \CFX\JsonApi\ResourceInterface The duplicate resource, if one exists
+     * @throws \CFX\Persistence\ResourceNotFoundException when a duplicate resource is _not_ found (i.e. should NOT return null)
+     */
     abstract public function getDuplicate(\CFX\JsonApi\ResourceInterface $r);
+
+    /**
+     * Save a new resource
+     *
+     * This method is called by `save` after verifications have passed regarding validity and uniqueness
+     *
+     * @param \CFX\JsonApi\ResourceInterface $r The resource to save
+     * @return static
+     * @throws \CFX\BadInputException
+     */
     abstract protected function saveNew(\CFX\JsonApi\ResourceInterface $r);
+
+    /**
+     * Save an existing resource
+     * This method is called by `save` after verifications have passed regarding validity and uniqueness
+     *
+     * @param \CFX\JsonApi\ResourceInterface $r The resource to save
+     * @return static
+     * @throws \CFX\BadInputException
+     */
     abstract protected function saveExisting(\CFX\JsonApi\ResourceInterface $r);
 
     /**
      * inflateData -- use the provided data to create a Resource or ResourceCollection object
      *
-     * @param array $data Should always be in the format of a "table with rows", i.e., `[ ["id" => "1234",
-     * "type" => "examples", "attributes" => [] ] ]`
-     * @param bool $isCollection Whether or not this data represents a collection
+     * @param array $data Should always be in the format of a "table with rows", i.e.,
+     *     [
+     *         [ "id" => "1234", "type" => "examples", "attributes" => [] ],
+     *     ]
+     * @param bool $isCollection Whether or not this data represents a collection (determines function output)
      * @return \CFX\JsonApi\ResourceInterface|\CFX\JsonApi\ResourceCollectionInterface
+     * @throws \CFX\Persistence\ResourceNotFoundException if !$isCollection and empty($data)
      */
     protected function inflateData(array $data, $isCollection) {
         if (!$isCollection && count($data) == 0) throw new ResourceNotFoundException("Sorry, we couldn't find some of the data you were looking for.");
@@ -184,10 +258,7 @@ abstract class AbstractDatasource implements DatasourceInterface {
 
 
     /**
-     * setDebug -- set the debug flag
-     *
-     * @param bool $debug Sets the debug flag to the given value
-     * @return static Returns the object itself.
+     * @inheritdoc
      */
     public function setDebug($debug) {
         $this->debug = (bool)$debug;

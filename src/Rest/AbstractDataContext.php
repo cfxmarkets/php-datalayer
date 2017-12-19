@@ -2,14 +2,34 @@
 namespace CFX\Persistence\Rest;
 
 abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext implements DataContextInterface {
-    // Abstract properties to be overridden by children
+    /**
+     * @var string The name of the given REST API (to be overridden by children)
+     */
     protected static $apiName;
+
+    /**
+     * @var string The version of the given REST API (to be overridden by children)
+     */
     protected static $apiVersion;
 
-    // Instance properties
+    /**
+     * @var string The base URI for the REST API being accessed
+     */
     protected $baseUri;
+
+    /**
+     * @var string The API Key for the REST API being accessed
+     */
     protected $apiKey;
+
+    /**
+     * @var string The Secret for the REST API being accessed
+     */
     protected $apiKeySecret;
+
+    /**
+     * @var \GuzzleHttp\ClientInterface An HTTP Client to use for handling requests to the REST API
+     */
     protected $httpClient;
 
     /**
@@ -23,6 +43,15 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
     protected $debugResponseLog = [];
 
 
+    /**
+     * Construct a new REST DataContext (an "API client")
+     *
+     * @param string $baseUri
+     * @param string $apiKey
+     * @param string $apiKeySecret
+     * @param \GuzzleHttp\ClientInterface|null $httpClient
+     * @return static
+     */
     public function __construct($baseUri, $apiKey, $apiKeySecret, \GuzzleHttp\ClientInterface $httpClient = null) {
         if (!static::$apiName) throw new \RuntimeException("Programmer: You must define the \$apiName property for your Client.");
         if (static::$apiVersion === null) throw new \RuntimeException("Programmer: You must define the \$apiVersion property for your Client.");
@@ -37,30 +66,59 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
         $this->httpClient = $httpClient;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getBaseUri() {
         return $this->baseUri;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getApiKey() {
         return $this->apiKey;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getApiKeySecret() {
+        return $this->getApiSecret();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getApiSecret()
+    {
         return $this->apiKeySecret;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getHttpClient() {
         return $this->httpClient;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getApiName() {
         return static::$apiName;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getApiVersion() {
         return static::$apiVersion;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function sendRequest($method, $endpoint, array $params=[]) {
         // Compose URI
         $uri = $this->composeUri($endpoint);
@@ -89,10 +147,71 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
         return $response;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function debugGetResponseLog()
+    {
+        if (!$this->debug) {
+            throw new \RuntimeException("In order to get the Response Log, you must enable debugging by using `setDebug`");
+        }
+        return $this->debugResponseLog;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function debugClearResponseLog()
+    {
+        $this->debugResponseLog = [];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function debugGetRequestLog()
+    {
+        if (!$this->debug) {
+            throw new \RuntimeException("In order to get the Request Log, you must enable debugging by using `setDebug`");
+        }
+        return $this->debugRequestLog;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function debugClearRequestLog()
+    {
+        $this->debugRequestLog = [];
+    }
+
+
+
+
+
+
+
+    /**
+     * Compose the final URI to which to send the request
+     *
+     * This method allows descendents to implement URL composition differently while still utilizing the rest of the
+     * sendRequest functionality.
+     *
+     * @return string
+     */
     protected function composeUri($endpoint) {
         return $this->getBaseUri()."/{$this->getApiName()}"."/v{$this->getApiVersion()}{$endpoint}";
     }
 
+    /**
+     * Process the response from the API call.
+     *
+     * This method is used to throw fine-grained exceptions in response to various server responses
+     *
+     * @param \GuzzleHttp\Message\ResponseInterface
+     * @return \GuzzleHttp\Message\ResponseInterface
+     * @throws \Exception (may throw various exceptions)
+     */
     protected function processResponse($r) {
         if ($r->getStatusCode() >= 500) {
             throw new \RuntimeException("Server Error: ".$r->getBody());
@@ -120,61 +239,18 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
         }
     }
 
+    /**
+     * Factory method for instantiating a default HTTP Client
+     *
+     * @return \GuzzleHttp\ClientInterface
+     */
     protected function newHttpClient()
     {
         return new \GuzzleHttp\Client([
             'defaults' => [
-                'config' => [
-                    'curl' => [
-                        CURLOPT_SSL_VERIFYHOST => 0,
-                        CURLOPT_SSL_VERIFYPEER => false,
-                    ],
-                ],
                 'exceptions' => false,
             ]
         ]);
-    }
-
-    /**
-     * For debugging, get an array of all Resposnes this object has received since the last time the log was cleared
-     *
-     * @return \GuzzleHttp\Message\ResponseInterface[] An array of all responses that this object has received
-     */
-    public function debugGetResponseLog()
-    {
-        if (!$this->debug) {
-            throw new \RuntimeException("In order to get the Response Log, you must enable debugging by using `setDebug`");
-        }
-        return $this->debugResponseLog;
-    }
-
-    /**
-     * For debugging, clear the response log, so you can see all responses returned in a defined piece of code
-     */
-    public function debugClearResponseLog()
-    {
-        $this->debugResponseLog = [];
-    }
-
-    /**
-     * For debugging, get an array of all Requests this object has made since the last time the log was cleared
-     *
-     * @return \GuzzleHttp\Message\RequestInterface[] An array of all requests that this object has generated
-     */
-    public function debugGetRequestLog()
-    {
-        if (!$this->debug) {
-            throw new \RuntimeException("In order to get the Request Log, you must enable debugging by using `setDebug`");
-        }
-        return $this->debugRequestLog;
-    }
-
-    /**
-     * For debugging, clear the response log, so you can see all requests returned in a defined piece of code
-     */
-    public function debugClearRequestLog()
-    {
-        $this->debugRequestLog = [];
     }
 }
 
