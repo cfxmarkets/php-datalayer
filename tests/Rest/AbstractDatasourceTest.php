@@ -19,10 +19,10 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         }
 
         $this->httpClient->setNextResponse(
-            new \GuzzleHttp\Message\Response(
+            new \GuzzleHttp\Psr7\Response(
                 $status,
                 $headers,
-                \GuzzleHttp\Stream\Stream::factory($body)
+                \GuzzleHttp\Psr7\stream_for($body)
             )
         );
     }
@@ -31,7 +31,7 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $this->setNextResponse([ 'data' => [] ]);
         $this->people->get();
         $r = $this->httpClient->getLastRequest();
-        $this->assertEquals('https://null.cfxtrading.com/tester/v1.0.0/test-people', (string)$r->getUrl());
+        $this->assertEquals('https://null.cfxtrading.com/tester/v1.0.0/test-people', (string)$r->getUri());
     }
 
     public function testReturnsResourceOrResourceCollection() {
@@ -90,7 +90,7 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $r = $this->httpClient->getLastRequest();
 
         $this->assertEquals('DELETE', $r->getMethod());
-        $this->assertEquals('https://null.cfxtrading.com/tester/v1.0.0/test-people/1', (string)$r->getUrl());
+        $this->assertEquals('https://null.cfxtrading.com/tester/v1.0.0/test-people/1', (string)$r->getUri());
 
         // Resource
         $data = Person::getTestData();
@@ -103,7 +103,7 @@ class AbstractDatasourceTest extends \PHPUnit\Framework\TestCase {
         $r = $this->httpClient->getLastRequest();
 
         $this->assertEquals('DELETE', $r->getMethod());
-        $this->assertEquals('https://null.cfxtrading.com/tester/v1.0.0/test-people/1', (string)$r->getUrl());
+        $this->assertEquals('https://null.cfxtrading.com/tester/v1.0.0/test-people/1', (string)$r->getUri());
     }
 
     public function testDelegatesSendRequestThroughOverridableCall() {

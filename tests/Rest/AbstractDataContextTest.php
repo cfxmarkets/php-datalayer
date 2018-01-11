@@ -44,16 +44,16 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
     public function testSendRequestReturnsResponse() {
         $httpClient = new HttpClient();
         $cfx = new RestDataContext('https://null.cfxtrading.com', '12345', 'abcde', $httpClient);
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(200));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
         $r = $cfx->sendRequest('GET', '/tests');
-        $this->assertInstanceOf("\\GuzzleHttp\\Message\\Response", $r);
+        $this->assertInstanceOf("\\Psr\\Http\\Message\\ResponseInterface", $r);
     }
 
     public function testThrowsExceptionsOnNon200Responses() {
         $httpClient = new HttpClient();
         $cfx = new RestDataContext('https://null.cfxtrading.com', '12345', 'abcde', $httpClient);
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(599));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(599));
         try {
             $cfx->sendRequest('GET', '/assets');
             $this->fail("Should have thrown exception");
@@ -61,7 +61,7 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains('server error', strtolower($e->getMessage()));
         }
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(500));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(500));
         try {
             $cfx->sendRequest('GET', '/assets');
             $this->fail("Should have thrown exception");
@@ -69,7 +69,7 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains('server error', strtolower($e->getMessage()));
         }
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(499));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(499));
         try {
             $cfx->sendRequest('GET', '/assets');
             $this->fail("Should have thrown exception");
@@ -77,7 +77,7 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains('user error', strtolower($e->getMessage()));
         }
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(400));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(400));
         try {
             $cfx->sendRequest('GET', '/assets');
             $this->fail("Should have thrown exception");
@@ -85,7 +85,7 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains('user error', strtolower($e->getMessage()));
         }
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(399));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(399));
         try {
             $cfx->sendRequest('GET', '/assets');
             $this->fail("Should have thrown exception");
@@ -93,7 +93,7 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains('3xx', strtolower($e->getMessage()));
         }
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(300));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(300));
         try {
             $cfx->sendRequest('GET', '/assets');
             $this->fail("Should have thrown exception");
@@ -101,7 +101,7 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains('3xx', strtolower($e->getMessage()));
         }
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(199));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(199));
         try {
             $cfx->sendRequest('GET', '/assets');
             $this->fail("Should have thrown exception");
@@ -109,7 +109,7 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains('1xx', strtolower($e->getMessage()));
         }
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(100));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(100));
         try {
             $cfx->sendRequest('GET', '/assets');
             $this->fail("Should have thrown exception");
@@ -117,11 +117,11 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains('1xx', strtolower($e->getMessage()));
         }
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(299));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(299));
         $r = $cfx->sendRequest('GET', '/assets');
         $this->assertEquals(299, $r->getStatusCode());
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(200));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
         $r = $cfx->sendRequest('GET', '/assets');
         $this->assertEquals(200, $r->getStatusCode());
     }
@@ -147,14 +147,14 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
 
         $cfx->setDebug(true);
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(200));
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
         $cfx->sendRequest('GET', '/assets');
         $this->assertTrue(is_array($cfx->debugGetRequestLog()), "Should have returned an array with requests in it");
         $this->assertTrue(is_array($cfx->debugGetResponseLog()), "Should have returned an array with responses in it");
         $this->assertEquals(1, count($cfx->debugGetRequestLog()));
         $this->assertEquals(1, count($cfx->debugGetResponseLog()));
-        $this->assertInstanceOf("\\GuzzleHttp\\Message\\RequestInterface", $cfx->debugGetRequestLog()[0]);
-        $this->assertInstanceOf("\\GuzzleHttp\\Message\\ResponseInterface", $cfx->debugGetResponseLog()[0]);
+        $this->assertInstanceOf("\\Psr\\Http\\Message\\RequestInterface", $cfx->debugGetRequestLog()[0]);
+        $this->assertInstanceOf("\\Psr\\Http\\Message\\ResponseInterface", $cfx->debugGetResponseLog()[0]);
 
         $cfx->debugClearRequestLog();
         $cfx->debugClearResponseLog();
@@ -167,10 +167,10 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
         $httpClient = new HttpClient();
         $cfx = new RestDataContext('https://null.cfxtrading.com', '12345', 'abcde', $httpClient);
 
-        $httpClient->setNextResponse(new \GuzzleHttp\Message\Response(
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(
             409,
             [],
-            \GuzzleHttp\Stream\Stream::factory(json_encode([
+            \GuzzleHttp\Psr7\stream_for(json_encode([
                 'errors' => [
                     [
                         'status' => 409,

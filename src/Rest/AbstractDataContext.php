@@ -136,7 +136,8 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
 
         if (!$authz_header) $params['headers']['Authorization'] = "Basic ".base64_encode("{$this->getApiKey()}:{$this->getApiKeySecret()}");
 
-        $request = $this->httpClient->createRequest($method, $uri, $params);
+        $request = new \GuzzleHttp\Psr7\Request($method, $uri, $params['headers']);
+        $request = $this->applyRequestOptions($request, $params);
         $response = $this->processResponse($this->httpClient->send($request));
 
         if ($this->debug) {
@@ -145,6 +146,65 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
         }
 
         return $response;
+    }
+
+    /**
+     * Function to return a new request as transformed by the Guzzle 5.3 options array
+     *
+     * @param \Psr\Http\Message\RequestInterface $r
+     * @param array $options
+     * @return \Psr\Http\Message\RequestInterface
+     */
+    protected function applyRequestOptions(\Psr\Http\Message\RequestInterface $r, array $options = [])
+    {
+        $body = (string)$r->getBody();
+        $query = $r->getUri()->getQuery();
+        if ($query !== '') {
+            $query = explode("&", $query);
+        } else {
+            $query = [];
+        }
+        $uri = $r->getUri();
+
+        if (array_key_exists('body', $options)) {
+            if ($body) {
+                throw new \RuntimeException("You have supplied a body for this request, but you're also trying to provide a body in the parameters array. You should choose one or the other.");
+            }
+            if (is_array($options['body'])) {
+                $body = http_build_query($options['body']);
+            } else {
+                $body = $options['body'];
+            }
+        }
+
+        if (array_key_exists('json', $options)) {
+            if ($body) {
+                throw new \RuntimeException("You have already supplied a body for this request, but you're also trying to provide a json key in the parameters array. You should choose one or the other.");
+            }
+            if (is_string($options['json'])) {
+                $body = $options['json'];
+            } else {
+                $body = json_encode($options['json']);
+            }
+        }
+
+        if (array_key_exists('query', $options)) {
+            $newQuery = [];
+            if (is_string($options['query'])) {
+                $newQuery = explode("&", $options['query']);
+            }
+            $query = array_merge_recursive($query, $newQuery);
+        }
+
+        if (count($query) > 0) {
+            $uri = $uri->withQuery(implode("&", $query));
+            $r = $r->withUri($uri);
+        }
+
+        if ($body) {
+            $r= $r->withBody(\GuzzleHttp\Psr7\stream_for($body));
+        }
+        return $r;
     }
 
     /**
