@@ -159,6 +159,7 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
     protected function applyRequestOptions(\Psr\Http\Message\RequestInterface $r, array $options = [])
     {
         $body = (string)$r->getBody();
+        $bodyType = 'application/x-www-form-urlencoded';
         $query = $r->getUri()->getQuery();
         if ($query !== '') {
             $query = explode("&", $query);
@@ -180,13 +181,14 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
 
         if (array_key_exists('json', $options)) {
             if ($body) {
-                throw new \RuntimeException("You have already supplied a body for this request, but you're also trying to provide a json key in the parameters array. You should choose one or the other.");
+                throw new \RuntimeException("You have already supplied a body for this request, but you're also trying to provide a json key in the parameters array. You should choose one or  the other.");
             }
             if (is_string($options['json'])) {
                 $body = $options['json'];
             } else {
                 $body = json_encode($options['json']);
             }
+            $bodyType = 'application/json';
         }
 
         if (array_key_exists('query', $options)) {
@@ -206,6 +208,9 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
 
         if ($body) {
             $r= $r->withBody(\GuzzleHttp\Psr7\stream_for($body));
+            if (!$r->getHeader('Content-Type')) {
+                $r = $r->withHeader('Content-Type', $bodyType);
+            }
         }
         return $r;
     }
