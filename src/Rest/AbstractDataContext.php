@@ -315,9 +315,7 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
     protected function newHttpClient()
     {
         return new \GuzzleHttp\Client([
-            'defaults' => [
-                'exceptions' => false,
-            ]
+            'http_errors' => false,
         ]);
     }
 }
