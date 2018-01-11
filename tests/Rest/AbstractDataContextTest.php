@@ -200,5 +200,68 @@ class AbstractDataContextTest extends \PHPUnit\Framework\TestCase {
             $this->assertEquals("12345abcde", $user->getId());
         }
     }
+
+    public function testHandlesGuzzle53RequestOptions()
+    {
+        $httpClient = new HttpClient();
+        $cfx = new RestDataContext('https://null.cfxtrading.com', '12345', 'abcde', $httpClient);
+
+        // Test headers
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
+        $cfx->sendRequest("GET", "/some-resource", [
+            'headers' => [
+                'X-Test1' => 'test1',
+                'X-Test2' => [
+                    'Test2a',
+                    'Test2b',
+                ]
+            ]
+        ]);
+        $r = $httpClient->getLastRequest();
+        $this->assertEquals("test1", $r->getHeaderLine('X-Test1'));
+        $this->assertEquals("Test2a, Test2b", $r->getHeaderLine("X-Test2"));
+
+        // Test string body
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
+        $cfx->sendRequest("GET", "/some-resource", ['body' => 'someparam=1&otherparam=2']);
+        $r = $httpClient->getLastRequest();
+        $this->assertEquals('someparam=1&otherparam=2', (string)$r->getBody());
+
+        // Test array body
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
+        $cfx->sendRequest("GET", "/some-resource", ['body' => [ 'someparam' => 1, 'otherparam' => 2]]);
+        $r = $httpClient->getLastRequest();
+        $this->assertEquals('someparam=1&otherparam=2', (string)$r->getBody());
+
+        // Test stream body
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
+        $cfx->sendRequest("GET", "/some-resource", ['body' => \GuzzleHttp\Psr7\stream_for('someparam=1&otherparam=2')]);
+        $r = $httpClient->getLastRequest();
+        $this->assertEquals('someparam=1&otherparam=2', (string)$r->getBody());
+
+        // Test json
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
+        $cfx->sendRequest("GET", "/some-resource", ['json' => [ 'someparam' => 1, 'otherparam' => 2]]);
+        $r = $httpClient->getLastRequest();
+        $this->assertEquals('{"someparam":1,"otherparam":2}', (string)$r->getBody());
+
+        // Test query
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
+        $cfx->sendRequest("GET", "/some-resource", ['query' => [ 'someparam' => 1, 'otherparam' => 2]]);
+        $r = $httpClient->getLastRequest();
+        $this->assertEquals('someparam=1&otherparam=2', $r->getUri()->getQuery());
+
+        // Test additional query
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
+        $cfx->sendRequest("GET", "/some-resource?firstparam=0", ['query' => [ 'someparam' => 1, 'otherparam' => 2]]);
+        $r = $httpClient->getLastRequest();
+        $this->assertEquals('firstparam=0&someparam=1&otherparam=2', $r->getUri()->getQuery());
+
+        // Test string query
+        $httpClient->setNextResponse(new \GuzzleHttp\Psr7\Response(200));
+        $cfx->sendRequest("GET", "/some-resource?firstparam=0", ['query' => 'someparam=1&otherparam=2']);
+        $r = $httpClient->getLastRequest();
+        $this->assertEquals('firstparam=0&someparam=1&otherparam=2', $r->getUri()->getQuery());
+    }
 }
 

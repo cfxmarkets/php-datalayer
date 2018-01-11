@@ -138,7 +138,8 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
 
         $request = new \GuzzleHttp\Psr7\Request($method, $uri, $params['headers']);
         $request = $this->applyRequestOptions($request, $params);
-        $response = $this->processResponse($this->httpClient->send($request));
+        unset($params['body'], $params['json'], $params['headers'], $params['query']);
+        $response = $this->processResponse($this->httpClient->send($request, $params));
 
         if ($this->debug) {
             $this->debugRequestLog[] = $request;
@@ -189,9 +190,11 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
         }
 
         if (array_key_exists('query', $options)) {
-            $newQuery = [];
-            if (is_string($options['query'])) {
-                $newQuery = explode("&", $options['query']);
+            $newQuery = $options['query'];
+            if (is_string($newQuery)) {
+                $newQuery = explode("&", $newQuery);
+            } else {
+                $newQuery = explode("&", http_build_query($newQuery));
             }
             $query = array_merge_recursive($query, $newQuery);
         }
