@@ -1,7 +1,7 @@
 <?php
 namespace CFX\Persistence;
 
-abstract class ArrayDatasource extends AbstractDatasource
+abstract class AbstractArrayDatasource extends AbstractDatasource
 {
     protected $datastore;
 
