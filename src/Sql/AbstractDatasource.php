@@ -31,6 +31,30 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
      */
     protected $lastInsertId;
 
+    /**
+     * @var array A PDO or Closure that instantiates a PDO (@see __construct())
+     */
+    private $pdo;
+
+
+
+
+
+    /**
+     * Construct a SQL Datasource
+     *
+     * @param array $pdo The PDO that provides the SQL connection for this datasource. For example:
+     *      function() {
+     *          $pdo = new \PDO('mysql:unix_socket=/var/run/mysql/mysql.sock;dbname=exampledb', 'dev', 'dev');
+     *          $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+     *          return $pdo;
+     *      } 
+     */
+    public function __construct(DataContextInterface $context, $pdo) {
+        $this->pdo = $pdo;
+        parent::__construct($context);
+    }
+
 
 
 
@@ -359,10 +383,23 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     }
 
     /**
-     * Execute the given query (@see \CFX\Persistence\Sql\AbstractDataContext::executeQuery)
+     * Execute the given SQL Query
+     *
+     * @param QueryInterface $query
+     * @return array|string|int|null Returns the result set on SELECT queries, or the last insert id (if applicable) on other queries
      */
     protected function executeQuery(QueryInterface $query) {
-        return $this->context->executeQuery($query);
+        $q = $this->getPdo($query->database)->prepare($query->constructQuery());
+        $q->execute($query->params);
+
+        // Log query
+        $this->context->logQuery("SQL Datasource `{$this->getResourceType()}`", $query->constructQuery()." (".var_export($query->params, true).")");
+
+        if ($q->columnCount() > 0) {
+            return $q->fetchAll(\PDO::FETCH_ASSOC);
+        } else {
+            return $this->getPdo($query->database)->lastInsertId();
+        }
     }
 
     /**
@@ -453,6 +490,26 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         }
 
         return $jsonapi;
+    }
+
+
+    /**
+     * Gets the PDO for this datasource, instantiating if necessary
+     *
+     * @return \PDO
+     * @throws \RuntimeException
+     */
+    protected function getPdo() {
+        if ($this->pdo instanceof \Closure) {
+            $pdo = $this->pdo;
+            $this->pdo = $pdo();
+        }
+        if ($this->pdo instanceof \PDO || $this->pdo instanceof \CFX\Test\PDO) {
+            return $this->pdo;
+        }
+
+        $type = is_object($this->pdo) ? get_class($this->pdo) : gettype($this->pdo)." (".$this->pdo.")";
+        throw new \RuntimeException("Programmer: The PDO you pass to a \\CFX\\Sql\\Datasource must either be a Closure that returns a valid PDO or an already-instantiated PDO. You've passed an object which is neither (`$type`).");
     }
 }
 

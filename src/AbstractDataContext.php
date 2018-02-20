@@ -12,6 +12,11 @@ abstract class AbstractDataContext implements DataContextInterface {
      */
     protected $debug;
 
+    /**
+     * @var array An array of queries reported by child datasources, indexed by timestamp
+     */
+    private $queryLog = [];
+
 
 
 
@@ -114,6 +119,18 @@ abstract class AbstractDataContext implements DataContextInterface {
         }
 
         return $this;
+    }
+
+    public function logQuery(string $source, string $query)
+    {
+        if ($this->debug) {
+            $this->queryLog[microtime()] = "$source: $query";
+        }
+    }
+
+    public function getQueryLog()
+    {
+        return $this->queryLog;
     }
 }
 

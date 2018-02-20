@@ -46,5 +46,23 @@ interface DataContextInterface {
      * @return static
      */
     public function setDebug($debug);
+
+
+    /**
+     * Allows a datasource to report queries that it's making so that all queries can be
+     * evaluated for debugging purposes.
+     *
+     * @param string $source An arbitrary string describing the source of the query (usually datasource name)
+     * @param string $query An arbitrary string describing the query being executed by the datasource
+     * @return static
+     */
+    public function logQuery(string $source, string $query): static;
+
+    /**
+     * Allows programmers to view any queries reported by child datasources
+     *
+     * @return array An array of queries logged by child datasources (should be indexed by timestamp)
+     */
+    public function getQueryLog(): array;
 }
 
