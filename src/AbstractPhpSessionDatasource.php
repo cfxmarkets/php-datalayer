@@ -9,7 +9,7 @@ abstract class AbstractPhpSessionDatasource extends AbstractArrayDatasource
     public function __construct(DataContextInterface $context, array &$datastore = null)
     {
         if ($datastore === null) {
-            if (is_array($_SESSION)) {
+            if (isset($_SESSION) && is_array($_SESSION)) {
                 $datastore = &$_SESSION;
             } else {
                 $datastore = [];
@@ -17,6 +17,19 @@ abstract class AbstractPhpSessionDatasource extends AbstractArrayDatasource
         }
 
         return parent::__construct($context, $datastore);
+    }
+
+    public function saveNew(\CFX\JsonApi\ResourceInterface $r)
+    {
+        if (!$r->getId()) {
+            $id = session_id();
+            if (!$id) {
+                throw new \RuntimeException("PhpSessionDatasource needs session_id() to return the correct session id, but it's returning null.");
+            } else {
+                $r->setId($id);
+            }
+        }
+        return parent::saveNew($r);
     }
 
     protected function &getDatastore()
