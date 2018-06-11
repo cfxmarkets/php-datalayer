@@ -61,5 +61,16 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
         $this->assertEquals(['12345', '553jjjsd', 'someBigId123456'], $q->getParams());
         $this->assertEquals("id=12345 and test1=553jjjsd and test2=someBigId123456", (string)$q);
     }
+
+    public function testCorrectlyComposesWhereWithSet()
+    {
+        $q = Test\TestDSLQuery::parse("test3 in ('one', 'two', 'three', 'four')");
+        $this->assertEquals("`test3` in (?, ?, ?, ?)", $q->getWhere());
+        $this->assertEquals([ "one", "two", "three", "four" ], $q->getParams());
+
+        $q = Test\TestDSLQuery::parse("test3 in (five,six,seven)");
+        $this->assertEquals("`test3` in (?, ?, ?)", $q->getWhere());
+        $this->assertEquals([ "five", "six", "seven" ], $q->getParams());
+    }
 }
 

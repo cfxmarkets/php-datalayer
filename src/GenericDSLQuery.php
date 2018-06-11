@@ -60,10 +60,6 @@ class GenericDSLQuery implements DSLQueryInterface {
         $query = new static();
         if (!$q) return $query;
 
-        if (preg_match("/[()]/", $q)) {
-            throw new BadQueryException("Sorry, grouping is currently not accepted in queries");
-        }
-
         if (strpos($q, " or ") !== false) {
             throw new BadQueryException("Sorry, 'and' is currently the only supported operator in queries");
         }
@@ -72,9 +68,10 @@ class GenericDSLQuery implements DSLQueryInterface {
 
         $fieldList = implode("|",$query::getAcceptableFields());
         $valSpec = $query::getFieldValueSpecification();
+        $comparison = implode("|", $query::getComparisonOperators());
 
         foreach($q as $k => $expr) {
-            if (preg_match("/^($fieldList) ?(!?=) ?$valSpec$/i", $expr, $matches)) {
+            if (preg_match("/^($fieldList) ?($comparison) ?$valSpec$/i", $expr, $matches)) {
                 $setField = "set".ucfirst($matches[1]);
                 if (method_exists($query, $setField)) {
                     $query->$setField($matches[2], $matches[3]);
@@ -138,7 +135,12 @@ class GenericDSLQuery implements DSLQueryInterface {
                 } else {
                     $v .= "`$expr[field]`";
                 }
-                $v .= " $expr[operator] ?";
+                $v .= " $expr[operator] ";
+                if (is_array($expr["value"])) {
+                    $v .= "(".implode(", ", array_map(function($member) { return "?"; }, $expr["value"])).")";
+                } else {
+                    $v .= "?";
+                }
                 $str[] = $v;
             }
         }
@@ -207,7 +209,13 @@ class GenericDSLQuery implements DSLQueryInterface {
             if ($expr instanceof DSLQueryInterface) {
                 $str[] = "(".$expr.")";
             } else {
-                $str[] = "$name$expr[operator]$expr[value]";
+                $v = "$name$expr[operator]";
+                if (is_array($expr["value"])) {
+                    $v .= "('".implode("', '", $expr["value"])."')";
+                } else {
+                    $v .= $expr["value"];
+                }
+                $str[] = $v;
             }
         }
 
@@ -318,7 +326,7 @@ class GenericDSLQuery implements DSLQueryInterface {
      * @return string (regexp capture expression)
      */
     protected static function getFieldValueSpecification() {
-        return "([^ &'\"]+)";
+        return "['\"]?([^ &'\"]+)['\"]?";
     }
 }
 
