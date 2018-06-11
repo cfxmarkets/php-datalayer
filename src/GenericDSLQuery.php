@@ -74,7 +74,8 @@ class GenericDSLQuery implements DSLQueryInterface {
             if (preg_match("/^($fieldList) ?($comparison) ?$valSpec$/i", $expr, $matches)) {
                 $setField = "set".ucfirst($matches[1]);
                 if (method_exists($query, $setField)) {
-                    $query->$setField($matches[2], $matches[3]);
+                    $val = trim($matches[3], "'\"");
+                    $query->$setField($matches[2], $val);
                 } else {
                     throw new \RuntimeException(
                         "Programmer: You must implement a `$setField` method for this class (".get_class($query).") ".
@@ -314,7 +315,7 @@ class GenericDSLQuery implements DSLQueryInterface {
      * @return string[]
      */
     protected static function getComparisonOperators() {
-        return ['=', '!=', 'like', '>', '<', '>=', '<='];
+        return [ '>=', '<=', '!=', '=', 'like', '>', '<' ];
     }
 
     /**
