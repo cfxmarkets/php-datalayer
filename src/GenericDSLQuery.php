@@ -210,7 +210,7 @@ class GenericDSLQuery implements DSLQueryInterface {
             if ($expr instanceof DSLQueryInterface) {
                 $str[] = "(".$expr.")";
             } else {
-                $v = "$name$expr[operator]";
+                $v = "$name $expr[operator] ";
                 if (is_array($expr["value"])) {
                     $v .= "('".implode("', '", $expr["value"])."')";
                 } else {
