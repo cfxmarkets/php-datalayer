@@ -234,6 +234,7 @@ abstract class AbstractDatasource implements DatasourceInterface {
      */
     protected function inflateData(array $data, $isCollection) {
         if (!$isCollection && count($data) == 0) throw new ResourceNotFoundException("Sorry, we couldn't find some of the data you were looking for.");
+        if (!$isCollection && count($data) > 1) throw new \CFX\CorruptDataException("Programmer: You've indicated that you're expecting a single resource, but more than one row was returned.");
 
         foreach($data as $k => $o) {
             $this->currentData = $o;
