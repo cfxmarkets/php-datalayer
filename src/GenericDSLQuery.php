@@ -314,7 +314,7 @@ class GenericDSLQuery implements DSLQueryInterface {
      * @return string[]
      */
     protected static function getLogicalOperators() {
-        return [ 'and', 'or' ];
+        return [ 'and' ];
     }
 
     /**

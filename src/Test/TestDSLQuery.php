@@ -61,5 +61,9 @@ class TestDSLQuery extends \CFX\Persistence\GenericDSLQuery {
     {
         return $this->getExpression("test3");
     }
+
+    protected static function getLogicalOperators() {
+        return [ 'and', 'or' ];
+    }
 }
 
