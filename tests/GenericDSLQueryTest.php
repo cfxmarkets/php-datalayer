@@ -59,7 +59,7 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
         $this->assertEquals('someBigId123456', $q->getTest2());
         $this->assertEquals("`id` = ? and `test1` = ? and `test2` = ?", $q->getWhere());
         $this->assertEquals(['12345', '553jjjsd', 'someBigId123456'], $q->getParams());
-        $this->assertEquals("id=12345 and test1=553jjjsd and test2=someBigId123456", (string)$q);
+        $this->assertEquals("id = 12345 and test1 = 553jjjsd and test2 = someBigId123456", (string)$q);
     }
 
     public function testCorrectlyComposesWhereWithSet()
@@ -71,6 +71,24 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
         $q = Test\TestDSLQuery::parse("test3 in (five,six,seven)");
         $this->assertEquals("`test3` in (?, ?, ?)", $q->getWhere());
         $this->assertEquals([ "five", "six", "seven" ], $q->getParams());
+    }
+
+    public function testRejectsMultipleOperators()
+    {
+        try {
+            $q = Test\TestDSLQuery::parse("id = 12345 and test1 = gsdfff or test2 = asldkfslkdf");
+            $this->fail("Should have thrown an exception");
+        } catch (\CFX\Persistence\BadQueryException $e) {
+            $this->assertContains("Sorry, you can only set one type of logical operator per query for now.", $e->getMessage());
+        }
+    }
+
+    public function testAllowsOrQueries()
+    {
+        $q = Test\TestDSLQuery::parse("id = 12345 or test1 = fsdfsd or test2 != sdfsdfs");
+        $this->assertTrue($q->includes("id"));
+        $this->assertTrue($q->includes("test1"));
+        $this->assertFalse($q->includes("test2"));
     }
 }
 
