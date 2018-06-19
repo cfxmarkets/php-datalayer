@@ -29,7 +29,7 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
                 $q = GenericDSLQuery::parse($dsl);
                 $this->fail("Should have thrown exception");
             } catch (\CFX\Persistence\BadQueryException $e) {
-                $this->assertContains("Unacceptable fields or values", $e->getMessage());
+                $this->assertContains("Unacceptable fields, operators, or values found.", $e->getMessage());
             }
         }
     }
@@ -89,6 +89,16 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
         $this->assertTrue($q->includes("id"));
         $this->assertTrue($q->includes("test1"));
         $this->assertFalse($q->includes("test2"));
+    }
+
+    public function testOrQueriesDisabledByDefault()
+    {
+        try {
+            $q = GenericDSLQuery::parse("id = 12345 or id = 54321");
+            $this->fail("Should have thrown an exception");
+        } catch (\CFX\Persistence\BadQueryException $e) {
+            $this->assertContains("Unacceptable fields, operators, or values found.", $e->getMessage());
+        }
     }
 }
 

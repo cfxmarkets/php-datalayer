@@ -66,6 +66,7 @@ class GenericDSLQuery implements DSLQueryInterface {
         $fieldList = implode("|",$query::getAcceptableFields());
         $valSpec = $query::getFieldValueSpecification();
         $comparison = implode("|", $query::getComparisonOperators());
+        $operatorList = implode("|", static::getLogicalOperators());
 
         $operatorSet = false;
         foreach($q as $k => $expr) {
@@ -93,8 +94,9 @@ class GenericDSLQuery implements DSLQueryInterface {
                     }
                 } else {
                     throw new BadQueryException(
-                        "Unacceptable fields or values found. Acceptable fields are ($fieldList) and ".
-                        "values must be alpha-numeric with optional dashes or underscores. Offending expression: `$expr`"
+                        "Unacceptable fields, operators, or values found. Acceptable fields are ($fieldList), acceptable ".
+                        "operators are ($operatorList), and values must be alpha-numeric with optional dashes or underscores. ".
+                        "Offending expression: `$expr`"
                     );
                 }
             }
