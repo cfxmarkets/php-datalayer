@@ -29,7 +29,7 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
                 $q = GenericDSLQuery::parse($dsl);
                 $this->fail("Should have thrown exception");
             } catch (\CFX\Persistence\BadQueryException $e) {
-                $this->assertContains("Unacceptable fields or values", $e->getMessage());
+                $this->assertContains("Unacceptable fields, operators, or values found.", $e->getMessage());
             }
         }
     }
@@ -59,7 +59,46 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
         $this->assertEquals('someBigId123456', $q->getTest2());
         $this->assertEquals("`id` = ? and `test1` = ? and `test2` = ?", $q->getWhere());
         $this->assertEquals(['12345', '553jjjsd', 'someBigId123456'], $q->getParams());
-        $this->assertEquals("id=12345 and test1=553jjjsd and test2=someBigId123456", (string)$q);
+        $this->assertEquals("id = 12345 and test1 = 553jjjsd and test2 = someBigId123456", (string)$q);
+    }
+
+    public function testCorrectlyComposesWhereWithSet()
+    {
+        $q = Test\TestDSLQuery::parse("test3 in ('one', 'two', 'three', 'four')");
+        $this->assertEquals("`test3` in (?, ?, ?, ?)", $q->getWhere());
+        $this->assertEquals([ "one", "two", "three", "four" ], $q->getParams());
+
+        $q = Test\TestDSLQuery::parse("test3 in (five,six,seven)");
+        $this->assertEquals("`test3` in (?, ?, ?)", $q->getWhere());
+        $this->assertEquals([ "five", "six", "seven" ], $q->getParams());
+    }
+
+    public function testRejectsMultipleOperators()
+    {
+        try {
+            $q = Test\TestDSLQuery::parse("id = 12345 and test1 = gsdfff or test2 = asldkfslkdf");
+            $this->fail("Should have thrown an exception");
+        } catch (\CFX\Persistence\BadQueryException $e) {
+            $this->assertContains("Sorry, you can only set one type of logical operator per query for now.", $e->getMessage());
+        }
+    }
+
+    public function testAllowsOrQueries()
+    {
+        $q = Test\TestDSLQuery::parse("id = 12345 or test1 = fsdfsd or test2 != sdfsdfs");
+        $this->assertTrue($q->includes("id"));
+        $this->assertTrue($q->includes("test1"));
+        $this->assertFalse($q->includes("test2"));
+    }
+
+    public function testOrQueriesDisabledByDefault()
+    {
+        try {
+            $q = GenericDSLQuery::parse("id = 12345 or id = 54321");
+            $this->fail("Should have thrown an exception");
+        } catch (\CFX\Persistence\BadQueryException $e) {
+            $this->assertContains("Unacceptable fields, operators, or values found.", $e->getMessage());
+        }
     }
 }
 
