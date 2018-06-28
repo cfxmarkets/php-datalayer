@@ -13,7 +13,7 @@
     "require" : {
         "php" : ">=5.5",
         "kael-shipman/php-std-traits": "^7.0.0",
-        "cfxmarkets/php-jsonapi-objects": "^1.4.5@dev",
+        "cfxmarkets/php-jsonapi-objects": "^1.4.5",
         "guzzlehttp/guzzle" : "^6.3.0"
     },
     "require-dev" : {
@@ -28,9 +28,5 @@
         ]
     },
     "repositories": [
-        {
-            "type": "git",
-            "url": "git@github.com:cfxmarkets/php-jsonapi-objects.git"
-        }
     ]
 }

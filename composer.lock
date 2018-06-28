@@ -1,18 +1,18 @@
 {
     "_readme": [
         "This file locks the dependencies of your project to a known state",
-        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a65a98f029bc9ee2d4e02c5744aafd8e",
+    "content-hash": "35a7e0ab87c2c1f3257bbac1c7559ced",
     "packages": [
         {
             "name": "cfxmarkets/php-jsonapi-objects",
-            "version": "v1.4.x-dev",
+            "version": "v1.4.5",
             "source": {
                 "type": "git",
-                "url": "git@github.com:cfxmarkets/php-jsonapi-objects.git",
-                "reference": "34cdc59caa5eafe8167d19872f222aa24d195eab"
+                "url": "https://github.com/cfxmarkets/php-jsonapi-objects.git",
+                "reference": "f64e0531698e7e702c70e7af9ce3e74f1ba7d8e8"
             },
             "require": {
                 "kael-shipman/php-std-traits": "^7.0.0",
@@ -53,7 +53,7 @@
                 "json",
                 "jsonapi"
             ],
-            "time": "2018-06-23T21:59:27+00:00"
+            "time": "2018-06-28T00:37:13+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",
@@ -1743,9 +1743,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "cfxmarkets/php-jsonapi-objects": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
