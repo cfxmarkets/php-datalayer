@@ -127,11 +127,32 @@ abstract class AbstractDatasource implements DatasourceInterface {
             throw $e;
         }
 
+        // Validate it against the database
+        $this->validateIncoming($r);
+
         // If it exists already, update it
-        if ($r->getId()) $this->saveExisting($r);
+        if ($r->getId()) {
+            $this->saveExisting($r);
 
         // Else, create it
-        else {
+        } else {
+            $this->saveNew($r);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * NOTE: descendents should always call parent
+     */
+    public function validateIncoming(\CFX\JsonApi\ResourceInterface $r)
+    {
+        // Only validate uniqueness if not already in the database
+        if ($r->getId()) {
+            return $this;
+        } else {
             try {
                 $duplicate = $this->getDuplicate($r);
                 if (!($duplicate instanceof \CFX\JsonApi\ResourceInterface)) {
@@ -146,11 +167,9 @@ abstract class AbstractDatasource implements DatasourceInterface {
                 throw (new \CFX\Persistence\DuplicateResourceException("You've tried to submit a `{$r->getResourceType()}` resource that's already in our database (duplicate id `{$duplicate->getId()}`)."))
                     ->setDuplicateResource($duplicate);
             } catch (\CFX\Persistence\ResourceNotFoundException $e) {
-                $this->saveNew($r);
+                return $this;
             }
         }
-
-        return $this;
     }
 
     /**
