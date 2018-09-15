@@ -35,10 +35,10 @@ abstract class AbstractArrayDatasource extends AbstractDatasource
 
     public function saveNew(\CFX\JsonApi\ResourceInterface $r)
     {
-        if (!($id = $r->getId())) {
-            $id = md5(uniqid());
+        if (!$r->getId()) {
+            $r->setId(md5(uniqid()));
         }
-        $this->currentData = [ 'id' => $id ];
+        $this->currentData = [];
         $r->restoreFromData();
         $datastore = &$this->getDatastore();
         $datastore[] = json_decode(json_encode($r), true);

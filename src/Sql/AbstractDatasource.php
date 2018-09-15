@@ -166,6 +166,8 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
      * @inheritdoc
      */
     protected function saveNew(\CFX\JsonApi\ResourceInterface $r) {
+        $data = $r->jsonSerialize();
+
         if ($this->generatePrimaryKey) {
             $r->setId(md5(uniqid()));
             if (!$r->getId()) {
@@ -174,9 +176,8 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
                     "to any private resources you create to allow them to set the ID field."
                 );
             }
+            $data["id"] = $r->getId();
         }
-
-        $data = $r->jsonSerialize();
 
         // Initialize inserts
         $q = [

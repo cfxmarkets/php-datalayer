@@ -58,37 +58,47 @@ class GenericDSLQuery implements DSLQueryInterface {
      */
     public static function parse($q) {
         $query = new static();
+        $q = trim($q);
         if (!$q) return $query;
 
-        if (preg_match("/[()]/", $q)) {
-            throw new BadQueryException("Sorry, grouping is currently not accepted in queries");
-        }
-
-        if (strpos($q, " or ") !== false) {
-            throw new BadQueryException("Sorry, 'and' is currently the only supported operator in queries");
-        }
-
-        $q = explode(" and ", trim($q));
+        $q = preg_split("/ (".implode("|", static::getLogicalOperators()).") /", $q, 0, PREG_SPLIT_DELIM_CAPTURE);
 
         $fieldList = implode("|",$query::getAcceptableFields());
         $valSpec = $query::getFieldValueSpecification();
+        $comparison = implode("|", $query::getComparisonOperators());
+        $operatorList = implode("|", static::getLogicalOperators());
 
+        $operatorSet = false;
         foreach($q as $k => $expr) {
-            if (preg_match("/^($fieldList) ?(!?=) ?$valSpec$/i", $expr, $matches)) {
-                $setField = "set".ucfirst($matches[1]);
-                if (method_exists($query, $setField)) {
-                    $query->$setField($matches[2], $matches[3]);
+            // If we've got an operator (every other result), see if it's acceptable
+            if ($k % 2 === 1) {
+                if ($operatorSet && $expr != $query->operator) {
+                    throw new BadQueryException("Sorry, you can only set one type of logical operator per query for now.");
                 } else {
-                    throw new \RuntimeException(
-                        "Programmer: You must implement a `$setField` method for this class (".get_class($query).") ".
-                        "in order to successfully parse queries with it."
+                    $query->setOperator($expr);
+                    $operatorSet = true;
+                }
+
+            // Otherwise, try to set the field
+            } else {
+                if (preg_match("/^($fieldList) ?($comparison) ?$valSpec$/i", $expr, $matches)) {
+                    $setField = "set".ucfirst($matches[1]);
+                    if (method_exists($query, $setField)) {
+                        $val = trim($matches[3], "'\"");
+                        $query->$setField($matches[2], $val);
+                    } else {
+                        throw new \RuntimeException(
+                            "Programmer: You must implement a `$setField` method for this class (".get_class($query).") ".
+                            "in order to successfully parse queries with it."
+                        );
+                    }
+                } else {
+                    throw new BadQueryException(
+                        "Unacceptable fields, operators, or values found. Acceptable fields are ($fieldList), acceptable ".
+                        "operators are ($operatorList), and values must be alpha-numeric with optional dashes or underscores. ".
+                        "Offending expression: `$expr`"
                     );
                 }
-            } else {
-                throw new BadQueryException(
-                    "Unacceptable fields or values found. Acceptable fields are ($fieldList) and ".
-                    "values must be alpha-numeric with optional dashes or underscores. Offending expression: `$expr`"
-                );
             }
         }
 
@@ -138,7 +148,12 @@ class GenericDSLQuery implements DSLQueryInterface {
                 } else {
                     $v .= "`$expr[field]`";
                 }
-                $v .= " $expr[operator] ?";
+                $v .= " $expr[operator] ";
+                if (is_array($expr["value"])) {
+                    $v .= "(".implode(", ", array_map(function($member) { return "?"; }, $expr["value"])).")";
+                } else {
+                    $v .= "?";
+                }
                 $str[] = $v;
             }
         }
@@ -207,7 +222,13 @@ class GenericDSLQuery implements DSLQueryInterface {
             if ($expr instanceof DSLQueryInterface) {
                 $str[] = "(".$expr.")";
             } else {
-                $str[] = "$name$expr[operator]$expr[value]";
+                $v = "$name $expr[operator] ";
+                if (is_array($expr["value"])) {
+                    $v .= "('".implode("', '", $expr["value"])."')";
+                } else {
+                    $v .= $expr["value"];
+                }
+                $str[] = $v;
             }
         }
 
@@ -295,7 +316,7 @@ class GenericDSLQuery implements DSLQueryInterface {
      * @return string[]
      */
     protected static function getLogicalOperators() {
-        return [ 'and', 'or' ];
+        return [ 'and' ];
     }
 
     /**
@@ -306,7 +327,7 @@ class GenericDSLQuery implements DSLQueryInterface {
      * @return string[]
      */
     protected static function getComparisonOperators() {
-        return ['=', '!=', 'like', '>', '<', '>=', '<='];
+        return [ '>=', '<=', '!=', '=', 'like', '>', '<' ];
     }
 
     /**
@@ -318,7 +339,7 @@ class GenericDSLQuery implements DSLQueryInterface {
      * @return string (regexp capture expression)
      */
     protected static function getFieldValueSpecification() {
-        return "([^ &'\"]+)";
+        return "['\"]?([^ &'\"]+)['\"]?";
     }
 }
 

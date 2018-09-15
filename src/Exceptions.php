@@ -1,35 +1,51 @@
 <?php
 namespace CFX\Persistence;
 
+/**
+ * Base exception for persistence
+ */
+class Exception extends \RuntimeException { }
+
 /** 
  * UnknownDatasourceException
  * Indicates that the requested datasource is not known to the system
  */
-class UnknownDatasourceException extends \RuntimeException { }
+class UnknownDatasourceException extends \CFX\Persistence\Exception { }
 
 /**
  * CorruptDataException
  * Indicates that the datasource contains bad or inconsistent data
  **/
-class CorruptDataException extends \RuntimeException { }
+class CorruptDataException extends \CFX\Persistence\Exception { }
 
 /**
  * ResourceNotFoundException
  * Someone has sought a resource using an id that's not in the datasource
  */
-class ResourceNotFoundException extends \InvalidArgumentException { }
+class ResourceNotFoundException extends \CFX\Persistence\Exception { }
+
+/**
+ * The resource is immutable and cannot be changed. It must be deleted and a new one created.
+ */
+class ImmutableResourceException extends \CFX\Persistence\Exception { }
 
 /**
  * UnknownResourceTypeException
  * The given context does not know how to deal with resources of the given type
  */
-class UnknownResourceTypeException extends \RuntimeException { }
+class UnknownResourceTypeException extends \CFX\Persistence\Exception { }
+
+/**
+ * InconsistentDataException
+ * The given data object is inconsistent within the datasource
+ */
+class InconsistentDataException extends \CFX\Persistence\Exception { }
 
 /**
  * DuplicateResource
  * A submitted resource conflicts with one that's already in the database
  */
-class DuplicateResourceException extends \RuntimeException {
+class DuplicateResourceException extends \CFX\Persistence\Exception {
     protected $duplicate;
     public function setDuplicateResource(\CFX\JsonApi\ResourceInterface $resource) {
         $this->duplicate = $resource;
@@ -42,7 +58,7 @@ class DuplicateResourceException extends \RuntimeException {
  * BadQueryException
  * Someone has passed an invalid DSL Query string to the parser
  */
-class BadQueryException extends \RuntimeException {
+class BadQueryException extends \CFX\Persistence\Exception {
     protected $badParams = [];
     protected $badQueryString;
     public function setBadParams(array $params) {

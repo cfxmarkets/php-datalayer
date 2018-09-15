@@ -21,5 +21,17 @@ interface DatasourceInterface extends \CFX\JsonApi\DatasourceInterface
      * @return array A JSON API-format array representing resource data
      */
     public function getCurrentData();
+
+    /**
+     * Validate that the incoming data conforms to the standards of this particular datasource. For example, you would
+     * use this to ensure that duplicate resources are not inserted, or that certain related resources actually exist
+     * in the database (if desired).
+     *
+     * Input should be \CFX\JsonApi\Resource object with changed fields accessible via `getChanges`
+     *
+     * @param \CFX\JsonApi\ResourceInterface $r The resource being validated
+     * @return \CFX\JsonApi\DatasourceInterface self
+     */
+    public function validateIncoming(\CFX\JsonApi\ResourceInterface $r);
 }
 
