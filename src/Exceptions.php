@@ -25,6 +25,11 @@ class CorruptDataException extends \CFX\Persistence\Exception { }
 class ResourceNotFoundException extends \CFX\Persistence\Exception { }
 
 /**
+ * The resource is immutable and cannot be changed. It must be deleted and a new one created.
+ */
+class ImmutableResourceException extends \CFX\Persistence\Exception { }
+
+/**
  * UnknownResourceTypeException
  * The given context does not know how to deal with resources of the given type
  */
