@@ -145,7 +145,7 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         $data = $r->jsonSerialize();
 
         if ($this->generatePrimaryKey) {
-            $r->setId(md5(uniqid()));
+            $r->setId($this->newUUID());
             if (!$r->getId()) {
                 throw new \RuntimeException(
                     "Looks like the `id` field for this resource is still set to read-only. You should be add the `\CFX\JsonApi\PrivateResourceTrait` ".
