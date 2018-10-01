@@ -287,13 +287,21 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
             if ($r->getStatusCode() === 404) {
                 throw new \CFX\Persistence\ResourceNotFoundException("The resource you're looking for wasn't found in our system");
             } elseif ($r->getStatusCode() === 409) {
-                $body = json_decode($r->getBody(), true);
-                $duplicate = $body['errors'][0]['meta']['duplicateResource'];
                 $e = new \CFX\Persistence\DuplicateResourceException("The resource you've tried to create already exists in our system. Use the `getDuplicateResource` method of this exception to access it.");
-                try {
-                    $e->setDuplicateResource($this->newResource($duplicate, $duplicate['type']));
-                } catch (\CFX\Persistence\UnknownDatasourceException $e) {
-                    throw new \RuntimeException("The API has sent back a duplicate resource with a type that this SDK doesn't recognize (type: `$duplicate[type]`). This is an issue that the API Provider needs to resolve.");
+                $body = json_decode($r->getBody(), true);
+                if (
+                    isset($body["errors"]) &&
+                    is_array($body["errors"]) &&
+                    count($body["errors"]) > 0 &&
+                    isset($body["errors"][0]["meta"]) &&
+                    isset($body["errors"][0]["meta"]["duplicateResource"])
+                ) {
+                    try {
+                        $duplicate = $body['errors'][0]['meta']['duplicateResource'];
+                        $e->setDuplicateResource($this->newResource($duplicate, $duplicate['type']));
+                    } catch (\CFX\Persistence\UnknownDatasourceException $e) {
+                        throw new \RuntimeException("The API has sent back a duplicate resource with a type that this SDK doesn't recognize (type: `$duplicate[type]`). This is an issue that the API Provider needs to resolve.");
+                    }
                 }
                 throw $e;
             }
