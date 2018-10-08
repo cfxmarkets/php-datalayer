@@ -16,7 +16,8 @@
         "cfxmarkets/php-jsonapi-objects": "^1.4.5",
         "guzzlehttp/guzzle" : "^6.3.0",
         "ramsey/uuid": "^3.8.0",
-        "moontoast/math": "^1.1.0"
+        "moontoast/math": "^1.1.0",
+        "psr/log": "^1.0.0"
     },
     "require-dev" : {
         "phpunit/phpunit" : ">=4.8.0"

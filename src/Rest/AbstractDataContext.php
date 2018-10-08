@@ -134,11 +134,19 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
             }
         }
 
-        if (!$authz_header) $params['headers']['Authorization'] = "Basic ".base64_encode("{$this->getApiKey()}:{$this->getApiKeySecret()}");
+        $basicAuth = "Basic ".base64_encode("{$this->getApiKey()}:{$this->getApiKeySecret()}");
+        if ($authz_header === null) {
+            $params['headers']['Authorization'] = $basicAuth;
+        } else {
+            $params["headers"][$authz_header] .= ",$basicAuth";
+        }
 
         $request = new \GuzzleHttp\Psr7\Request($method, $uri, $params['headers']);
         $request = $this->applyRequestOptions($request, $params);
         unset($params['body'], $params['json'], $params['headers'], $params['query']);
+
+        $this->log(\Psr\Log\LogLevel::DEBUG, "REST Data Context calling '{$request->getMethod()} {$request->getUri()}'", [ "headers" => $request->getHeaders() ]);
+
         $response = $this->processResponse($this->httpClient->send($request, $params));
 
         if ($this->debug) {
@@ -281,6 +289,8 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
      * @throws \Exception (may throw various exceptions)
      */
     protected function processResponse($r) {
+        $this->log(\Psr\Log\LogLevel::DEBUG, "Response returned with code {$r->getStatusCode()} and response body '{$r->getBody()}'");
+
         if ($r->getStatusCode() >= 500) {
             throw new \RuntimeException("Server Error: ".$r->getBody());
         } elseif ($r->getStatusCode() >= 400) {
