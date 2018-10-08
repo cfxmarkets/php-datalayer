@@ -30,6 +30,9 @@ abstract class AbstractDataContext extends \CFX\Persistence\AbstractDataContext 
      * @return array|string|int|null Returns the result set on SELECT queries, or the last insert id (if applicable) on other queries
      */
     public function executeQuery(QueryInterface $query) {
+        $this->log(\Psr\Log\LogLevel::DEBUG, $query->constructQuery());
+        $this->log(\Psr\Log\LogLevel::DEBUG, var_export($query->params, true));
+
         $q = $this->getPdo($query->database)->prepare($query->constructQuery());
         $q->execute($query->params);
 
