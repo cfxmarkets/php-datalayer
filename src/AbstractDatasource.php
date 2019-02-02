@@ -23,6 +23,11 @@ abstract class AbstractDatasource implements DatasourceInterface {
      */
     protected $debug = false;
 
+    /**
+     * @var bool A flag to track whether UUID generation has been properly set up
+     */
+    private $uuidSetUp = false;
+
 
 
 
@@ -283,6 +288,22 @@ abstract class AbstractDatasource implements DatasourceInterface {
     public function setDebug($debug) {
         $this->debug = (bool)$debug;
         return $this;
+    }
+
+    protected function newUUID(): \Ramsey\Uuid\UuidInterface
+    {
+        if (!$this->uuidSetUp) {
+            $factory = new \Ramsey\Uuid\UuidFactory();
+            $generator = new \Ramsey\Uuid\Generator\CombGenerator($factory->getRandomGenerator(), $factory->getNumberConverter());
+            $codec = new \Ramsey\Uuid\Codec\TimestampFirstCombCodec($factory->getUuidBuilder());
+
+            $factory->setRandomGenerator($generator);
+            $factory->setCodec($codec);
+
+            \Ramsey\Uuid\Uuid::setFactory($factory);
+            $this->uuidSetUp = true;
+        }
+        return \Ramsey\Uuid\Uuid::uuid4();
     }
 }
 

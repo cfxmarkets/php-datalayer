@@ -1,7 +1,7 @@
 <?php
 namespace CFX\Persistence;
 
-abstract class AbstractDataContext implements DataContextInterface {
+abstract class AbstractDataContext implements DataContextInterface, \Psr\Log\LoggerAwareInterface {
     /**
      * @var DatasourceInterface[] Cache of child datasources
      */
@@ -16,6 +16,11 @@ abstract class AbstractDataContext implements DataContextInterface {
      * @var array An array of queries reported by child datasources, indexed by timestamp
      */
     private $queryLog = [];
+
+    /**
+     * @var \Psr\Log\LoggerInterface|null an optional logger with which to log messages
+     */
+    private $logger;
 
 
 
@@ -102,6 +107,28 @@ abstract class AbstractDataContext implements DataContextInterface {
      */
     protected function instantiateDatasource($name) {
         throw new UnknownDatasourceException("Programmer: Don't know how to handle datasources of type `$name`. If you'd like to handle this, you should either add this datasource to the `instantiateDatasource` method in this class or create a derivative class to which to add it.");
+    }
+
+
+
+    // Logging
+
+    /**
+     * @inheritdoc from PSR-3
+     */
+    public function setLogger(\Psr\Log\LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
+    /**
+     * Only provide one general log function that accepts a $level argument
+     */
+    protected function log($level, $message, array $context = [])
+    {
+        if ($this->logger) {
+            $this->logger->log($level, $message, $context);
+        }
     }
 
 
