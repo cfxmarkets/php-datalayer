@@ -5,15 +5,28 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
     /**
      * @inheritdoc
      */
-    public function get($q=null) {
+    public function get($filter=null, ?string $sort = null, ?array $pagination = null) {
         $endpoint = "/".$this->getResourceType();
-        if (preg_match("/^id ?= ?([a-zA-Z0-9:|_-]+)$/", trim($q), $matches)) {
+        if (preg_match("/^id ?= ?([a-zA-Z0-9:|_-]+)$/", trim($filter), $matches)) {
             $endpoint .= "/".$matches[1];
-            $q = null;
+            $filter = null;
         }
 
-        if ($q) {
-            $endpoint .= "?q=".urlencode($q);
+        $query = [];
+        if ($filter) {
+            $query[] = "q=".urlencode($filter);
+        }
+        if ($sort) {
+            $query[] = "sort=".urlencode($sort);
+        }
+        if ($pagination) {
+            foreach ($pagination as $param => $val) {
+                $query[] = "$param=".urlencode($val);
+            }
+        }
+
+        if (count($query) > 0) {
+            $endpoint .= "?".implode("&", $query);
         }
 
         $r = $this->sendRequest('GET', $endpoint);

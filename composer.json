@@ -13,7 +13,7 @@
     "require" : {
         "php" : ">=5.5",
         "kael-shipman/php-std-traits": "^7.0.0",
-        "cfxmarkets/php-jsonapi-objects": "^1.4.5",
+        "cfxmarkets/php-jsonapi-objects": "^2.0.0",
         "guzzlehttp/guzzle" : "^6.3.0",
         "ramsey/uuid": "^3.8.0",
         "moontoast/math": "^1.1.0",
