@@ -134,7 +134,7 @@ class GenericDSLQuery implements DSLQueryInterface {
         $str = [];
         foreach($this->expressions as $name => $expr) {
             if ($expr instanceof DSLQueryInterface) {
-                $str[] = (string)$expr;
+                $str[] = "(".$expr->getWhere().")";
             } else {
                 $v = '';
                 if (array_key_exists('db', $expr)) {
