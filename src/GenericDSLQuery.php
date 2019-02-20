@@ -327,7 +327,7 @@ class GenericDSLQuery implements DSLQueryInterface {
      * @return string[]
      */
     protected static function getComparisonOperators() {
-        return [ '>=', '<=', '!=', '=', 'like', '>', '<' ];
+        return [ '>=', '<=', '!=', '=', "not like", 'like', '>', '<' ];
     }
 
     /**
