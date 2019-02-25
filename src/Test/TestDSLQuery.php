@@ -48,12 +48,6 @@ class TestDSLQuery extends \CFX\Persistence\GenericDSLQuery {
             "value" => $val,
         ];
 
-        if ($operator === "in" || $operator === "not in") {
-            $valList = preg_split("/, ?/", trim($val, " ()"));
-            $valList = array_map(function($v) { return trim($v, "'\""); }, $valList);
-            $expressionVal["value"] = $valList;
-        }
-
         $this->setExpressionValue('test3', $expressionVal);
     }
 
