@@ -145,7 +145,7 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
         $data = $r->jsonSerialize();
 
         if ($this->generatePrimaryKey) {
-            $r->setId((string)$this->newUUID());
+            $this->setPrimaryKey($r);
             if (!$r->getId()) {
                 throw new \RuntimeException(
                     "Looks like the `id` field for this resource is still set to read-only. You should be add the `\CFX\JsonApi\PrivateResourceTrait` ".
@@ -257,6 +257,19 @@ abstract class AbstractDatasource extends \CFX\Persistence\AbstractDatasource im
      */
     protected function getPrimaryKeyName() {
         return $this->primaryKeyName;
+    }
+
+    /**
+     * Allows each datasource to determine individually how it's primary keys are generated.
+     * This opens the door to using a "suggestedId" field on the resource itself, which allows
+     * the datasource to have final say, but allows the resource to try to set its own ID.
+     * @param \CFX\JsonApi\ResourceInterface
+     * @return self
+     */
+    protected function setPrimaryKey(\CFX\JsonApi\ResourceInterface $r)
+    {
+        $r->setId((string)$this->newUUID());
+        return $this;
     }
 
     /**
