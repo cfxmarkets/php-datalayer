@@ -100,5 +100,87 @@ class GenericDSLQueryTest extends \PHPUnit\Framework\TestCase {
             $this->assertContains("Unacceptable fields, operators, or values found.", $e->getMessage());
         }
     }
+
+    public function testCanCreateComplexQueries()
+    {
+        // Create new class with extended facilities
+        $query = new class extends GenericDSLQuery {
+            protected static function getAcceptableFields()
+            {
+                return array_merge(
+                    parent::getAcceptableFields(),
+                    [ "cryptoWallets" ]
+                );
+            }
+
+            protected static function getComparisonOperators() {
+                return array_merge(parent::getComparisonOperators(), [ "includes" ]);
+            }
+
+            // Allow fields to be quoted and in parentheses
+            protected static function getFieldValueSpecification()
+            {
+                return "(\(?['\"]?.+?['\"]?(?:, *)?\)?)";
+            }
+
+            public function setCryptoWallets($operator, $val)
+            {
+                if ($operator !== "includes") {
+                    throw new \CFX\Persistence\BadQueryException(
+                        "You may only use the 'includes' operator when querying crypto wallets"
+                    );
+                }
+
+                if (!is_array($val)) {
+                    $val = array_map(
+                        function($v) { return trim($v, "'\""); },
+                        preg_split(
+                            "/, */",
+                            trim($val, " ()")
+                        )
+                    );
+                }
+
+                // strip 0x from beginning, if necessary
+                $trimmed = array_map(function($v) { return preg_replace("/^0x/", "", $v); }, $val);
+
+                $placeholders = array_map(function($v) { return "?"; }, $val);
+
+                return $this->setExpressionValue('cryptoWallets', [
+                    "string" => "cryptoWallets $operator (".implode(", ", $val).")",
+                    "raw" => "EXISTS (".
+                        "SELECT * FROM `_crypto-wallets` `w` ".
+                        "WHERE ".
+                        "`w`.`legalEntityId` = `accts`.`AccountKey` && ".
+                        "`id` IN (UNHEX(".implode("),UNHEX(", $placeholders)."))".
+                    ")",
+                    'value' => $trimmed,
+                ]);
+            }
+            public function getCryptoWallets()
+            {
+                return $this->getExpressionValue("cryptoWallets");
+            }
+            public function unsetCryptoWallets()
+            {
+                return $this->setExpressionValue("cryptoWallets", null);
+            }
+        };
+
+        $testQuery = "id = 12345 and cryptoWallets includes (0xabc, 0x123, 0x456)";
+        $q = $query::parse($testQuery);
+
+        $this->assertEquals($testQuery, $q->__toString());
+        $this->assertEquals(
+            "`id` = ? and EXISTS (".
+                "SELECT * FROM `_crypto-wallets` `w` ".
+                "WHERE ".
+                "`w`.`legalEntityId` = `accts`.`AccountKey` && ".
+                "`id` IN (UNHEX(?),UNHEX(?),UNHEX(?))".
+            ")",
+            $q->getWhere()
+        );
+        $this->assertEquals(["12345", "abc", "123", "456"], $q->getParams());
+    }
 }
 

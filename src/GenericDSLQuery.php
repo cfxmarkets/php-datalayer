@@ -147,22 +147,26 @@ class GenericDSLQuery implements DSLQueryInterface {
                 $str[] = "(".$expr->getWhere().")";
             } else {
                 $v = '';
-                if (array_key_exists('db', $expr)) {
-                    $v .= "`$expr[db]`.";
-                }
-                if (array_key_exists('table', $expr)) {
-                    $v .= "`$expr[table]`.";
-                }
-                if (array_key_exists('options', $expr) && array_key_exists('no-quote', $expr['options'])) {
-                    $v .= $expr['field'];
+                if (array_key_exists('raw', $expr)) {
+                    $v = $expr["raw"];
                 } else {
-                    $v .= "`$expr[field]`";
-                }
-                $v .= " $expr[operator] ";
-                if (is_array($expr["value"])) {
-                    $v .= "(".implode(", ", array_map(function($member) { return "?"; }, $expr["value"])).")";
-                } else {
-                    $v .= "?";
+                    if (array_key_exists('db', $expr)) {
+                        $v .= "`$expr[db]`.";
+                    }
+                    if (array_key_exists('table', $expr)) {
+                        $v .= "`$expr[table]`.";
+                    }
+                    if (array_key_exists('options', $expr) && array_key_exists('no-quote', $expr['options'])) {
+                        $v .= $expr['field'];
+                    } else {
+                        $v .= "`$expr[field]`";
+                    }
+                    $v .= " $expr[operator] ";
+                    if (is_array($expr["value"])) {
+                        $v .= "(".implode(", ", array_map(function($member) { return "?"; }, $expr["value"])).")";
+                    } else {
+                        $v .= "?";
+                    }
                 }
                 $str[] = $v;
             }
@@ -232,13 +236,17 @@ class GenericDSLQuery implements DSLQueryInterface {
             if ($expr instanceof DSLQueryInterface) {
                 $str[] = "(".$expr.")";
             } else {
-                $v = "$name $expr[operator] ";
-                if (is_array($expr["value"])) {
-                    $v .= "('".implode("', '", $expr["value"])."')";
+                if (array_key_exists("string", $expr)) {
+                    $str[] = $expr["string"];
                 } else {
-                    $v .= $expr["value"];
+                    $v = "$name $expr[operator] ";
+                    if (is_array($expr["value"])) {
+                        $v .= "('".implode("', '", $expr["value"])."')";
+                    } else {
+                        $v .= $expr["value"];
+                    }
+                    $str[] = $v;
                 }
-                $str[] = $v;
             }
         }
 
@@ -264,14 +272,22 @@ class GenericDSLQuery implements DSLQueryInterface {
         if ($val instanceof DSLQueryInterface) {
             $this->expressions[$name] = $val;
         } elseif (is_array($val)) {
-            if (count(array_diff(['field','operator','value'], array_keys($val))) !== 0) {
+            if (
+                count(array_diff(['field','operator','value'], array_keys($val))) !== 0 &&
+                count(array_diff(["string", "raw", "value"], array_keys($val))) !== 0
+            ) {
                 throw new BadQueryException(
-                    "Programmer: You've passed a bad expression value to this function. Expression values should either be ".
-                    "instances of DSLQueryInterface or arrays containing at least the keys 'field', 'operator', and 'value'."
+                    "Programmer: You've passed a bad expression value to this function. ".
+                    "Expression values may be 1) instances of DSLQueryInterface; 2) arrays ".
+                    "containing at least the keys 'field', 'operator', and 'value'; or 3) arrays ".
+                    "containing at least the keys 'string', 'raw', and 'value'."
                 );
             }
 
-            if (!in_array($val['operator'], $this::getComparisonOperators())) {
+            if (
+                isset($val["operator"]) &&
+                !in_array($val['operator'], $this::getComparisonOperators())
+            ) {
                 throw new BadQueryException(
                     "The expression you've provided has an illegal comparison operator, `$val[operator]`. ".
                     "Legal operators are `".implode("`, `", $this::getComparisonOperators())."`."
